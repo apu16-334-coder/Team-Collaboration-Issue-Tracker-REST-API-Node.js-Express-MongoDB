@@ -1,10 +1,13 @@
 require('dotenv').config();
 
 const app = require('./src/app.js')
+const connectDB = require('./src/config/db.js')
 
 const startServer = async function () {
     try {
-        
+        // Connect to MongoDB
+        await connectDB();
+
         const PORT = process.env.PORT || 3000;
         const server = app.listen(PORT, () => {
             console.log(`[SERVER] Running in ${process.env.NODE_ENV} mode on port ${PORT}`);
