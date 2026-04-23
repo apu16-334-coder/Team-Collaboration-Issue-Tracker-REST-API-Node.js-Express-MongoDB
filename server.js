@@ -1,17 +1,14 @@
-require("dotenv").config();
+require('dotenv').config();
 
-const app = require("./src/app.js")
-const connectDB = require('./src/config/db.js')
+const app = require('./src/app.js')
 
-const startServer = async () => {
+const startServer = async function () {
     try {
-        // Connect to MongoDB
-        await connectDB();
-
+        
         const PORT = process.env.PORT || 3000;
         const server = app.listen(PORT, () => {
             console.log(`[SERVER] Running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-        });
+        })
 
         // Catch unhandled promise rejections
         // Close server gracefully before exiting
@@ -19,8 +16,9 @@ const startServer = async () => {
             console.error("[CRASH] UNHANDLED REJECTION:", err.message);
             server.close(() => process.exit(1));
         })
+
     } catch (err) {
-        // Startup failure
+        // Startup failure (DB connection failed, etc.)
         console.error("[CRASH] Startup error:", err.message);
         process.exit(1);
     }
