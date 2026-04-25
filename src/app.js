@@ -1,5 +1,7 @@
 const express = require("express");
 
+const { noRouteFound, globalErrorHandler } = require('./middlewares/error.middleware.js')
+
 const app = express();
 
 // Query parser extended
@@ -15,5 +17,11 @@ app.get('/', (req, res) =>{
         message: 'API is running'
     })
 })
+
+/* ---------- ERROR HANDLERS ---------- */
+app.use(noRouteFound)
+
+app.use(globalErrorHandler)
+
 
 module.exports = app;
