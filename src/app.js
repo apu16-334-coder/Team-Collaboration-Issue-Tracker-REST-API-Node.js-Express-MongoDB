@@ -4,6 +4,7 @@ const cors = require('cors')
 const rateLimit = require('express-rate-limit')
 
 const { noRouteFound, globalErrorHandler } = require('./middlewares/error.middleware.js')
+const authRouter = require('./routes/auth.route.js')
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.get('/', (req, res) =>{
 
 /* ---------- ROUTES ---------- */
 
+app.use('/api/v1/auth', authRouter);
 
 
 /* ---------- ERROR HANDLERS ---------- */

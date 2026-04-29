@@ -14,6 +14,9 @@ const connectDB = async function () {
         // Connect to MongoDB using Mongoose
         await mongoose.connect(DB);
 
+        // For debugging
+        mongoose.set('debug', true); // ← HERE
+
         // Log success (only for development/debugging)
         console.log('DB connected');
     } catch (error) {

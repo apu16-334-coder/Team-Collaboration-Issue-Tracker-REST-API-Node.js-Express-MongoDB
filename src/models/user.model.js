@@ -41,7 +41,8 @@ const userSchema = new mongoose.Schema({
         default: true
     },
 
-    passwordChangedAt: Date
+    passwordChangedAt: Date,
+
 }, {
     timestamps: true
 });
@@ -49,14 +50,14 @@ const userSchema = new mongoose.Schema({
 // Pre-save middleware
 // Hash password if modified and set PasswordChangedAt
 userSchema.pre('save', async function () {
-    if(!this.isModified('password')) requestAnimationFrame;
+    if (!this.isModified('password')) return;
 
     // Hash the password
     this.password = await bcrypt.hash(this.password, 12);
 
     // Update passwordChangedAt if document is not new
-    if(!this.isNew) {
-        this.passwordChangedAt = Date.now() -1000 // subtract 1 sec to ensure token validity
+    if (!this.isNew) {
+        this.passwordChangedAt = Date.now() - 1000 // subtract 1 sec to ensure token validity
     }
 })
 
