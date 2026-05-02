@@ -77,4 +77,25 @@ const getAllUsers = catchAsync(
     }
 )
 
-module.exports = { createUser, getAllUsers }
+/**
+ * getMe
+ * Get current logged-in user
+ * GET /api/v1/users/me
+ */
+const getMe = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        res.status(200).json({
+            success: true,
+            data: {
+                id: req.user.id,
+                name: req.user.name,
+                email: req.user.email,
+                role: req.user.role
+            }
+        })
+    }
+)
+
+
+module.exports = { createUser, getAllUsers, getMe }
