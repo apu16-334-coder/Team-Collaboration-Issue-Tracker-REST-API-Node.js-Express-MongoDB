@@ -97,5 +97,30 @@ const getMe = catchAsync(
     }
 )
 
+/**
+ * updateMe
+ * Update logged-in user's profile (name, email)
+ * PATCH /api/v1/users/me
+ */
+const updateMe = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        const { name, email } = req.body;
 
-module.exports = { createUser, getAllUsers, getMe }
+        console.log(req.user.id)
+        const user = await Users.findByIdAndUpdate(
+            req.user.id,
+            { name, email },
+            { returnDocument: 'after', runValidators: true }
+        ).select('name email role isActive');
+
+        if(!user || !user.isActive) return next(new AppError(404, 'User not found'));
+
+        res.status(200).json({
+            success: true,
+            data: user
+        })
+    }
+)
+
+module.exports = { createUser, getAllUsers, getMe, updateMe }
