@@ -1,6 +1,7 @@
 const Users = require('../models/user.model.js')
 const catchAsync = require('../utils/catchAsync.js')
 const AppError = require("../utils/AppError.js");
+const ApiFeatures = require("../utils/apiFeatures.js");
 
 /**
  * @typedef {import('express').RequestHandler} RequestHandler
@@ -51,10 +52,26 @@ const createUser = catchAsync(
 const getAllUsers = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        const users = await Users.find();
+        // Adding Api features(filter, search, sort, pagination) to query
+        const features = new ApiFeatures(Users.find(), req.query)
+            .filter()
+            .search('name', 'email') // Search in name AND email fields
+            .sort()
+            .pagination()
 
+        // execute query
+        const users = await features.query;
+
+        // Passed customQueryObj with filter and search features to count total 
+        const total = await Users.countDocuments(features.customQueryObj);
+
+        // Send response meta-data for pagination
         res.status(200).json({
             success: true,
+            results: users.length,
+            total,
+            page: features.page,
+            limit: features.limit,
             data: users
         })
     }
