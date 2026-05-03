@@ -4,7 +4,8 @@ const {
     createUser, 
     getAllUsers, 
     getMe, 
-    updateMe 
+    updateMe,
+    getUser
 } = require("../controllers/user.controller.js")
 
 const { protect, restrictTo } = require("../middlewares/auth.middleware.js")
@@ -15,6 +16,9 @@ router.route('/')
 
 router.route('/me')
     .get(protect, getMe)
-    .patch(protect, updateMe)
+    .patch(protect, restrictTo('admin', 'team_lead'), updateMe)
+
+router.route("/:id")
+    .get(protect, restrictTo('admin', 'team_lead'), getUser)
 
 module.exports = router;

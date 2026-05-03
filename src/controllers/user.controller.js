@@ -15,12 +15,12 @@ const ApiFeatures = require("../utils/apiFeatures.js");
 const createUser = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        const { 
-            name, 
-            description, 
-            email, 
-            password, 
-            role 
+        const {
+            name,
+            description,
+            email,
+            password,
+            role
         } = req.body;
 
         const user = await Users.create({
@@ -114,8 +114,6 @@ const updateMe = catchAsync(
             { returnDocument: 'after', runValidators: true }
         ).select('name email role isActive');
 
-        if(!user || !user.isActive) return next(new AppError(404, 'User not found'));
-
         res.status(200).json({
             success: true,
             data: user
@@ -123,4 +121,29 @@ const updateMe = catchAsync(
     }
 )
 
-module.exports = { createUser, getAllUsers, getMe, updateMe }
+/**
+ * getUser
+ * Admin, team_lead only the members of his teams: get a user by ID
+ * GET /api/v1/users/:id
+ */
+const getUser = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        const user = await Users.findById(req.user.id)
+
+        if (!user) {
+            return next(new AppError(404, "User not found"));
+        }
+
+        res.status(200).json({
+            success: true,
+            data: user
+        });
+        // res.send("get a user by id....")
+
+    }
+)
+
+
+
+module.exports = { createUser, getAllUsers, getMe, updateMe, getUser }
