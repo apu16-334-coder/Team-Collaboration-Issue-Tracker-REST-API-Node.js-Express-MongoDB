@@ -129,7 +129,7 @@ const updateMe = catchAsync(
 const getUser = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        const user = await Users.findById(req.user.id)
+        const user = await Users.findById(req.params.id)
 
         if (!user) {
             return next(new AppError(404, "User not found"));
@@ -165,7 +165,7 @@ const updateUser = catchAsync(
         } = req.body
 
         const user = await Users.findByIdAndUpdate(
-            req.user.id,
+            req.params.id,
             { name, email, password, role, isActive },
             { returnDocument: 'after', runValidators: true }
         );
@@ -191,7 +191,7 @@ const deleteUser = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
         const user = await Users.findByIdAndUpdate(
-            req.user.id,
+            req.params.id,
             { isActive: false },
             { returnDocument: 'after', runValidators: true }
         );
@@ -204,4 +204,14 @@ const deleteUser = catchAsync(
     }
 )
 
-module.exports = { createUser, getAllUsers, getMe, updateMe, getUser, deleteUser }
+
+
+module.exports = { 
+    createUser, 
+    getAllUsers, 
+    getMe, 
+    updateMe, 
+    getUser, 
+    updateUser, 
+    deleteUser
+}
