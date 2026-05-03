@@ -5,7 +5,8 @@ const {
     getAllUsers, 
     getMe, 
     updateMe,
-    getUser
+    getUser,
+    deleteUser
 } = require("../controllers/user.controller.js")
 
 const { protect, restrictTo } = require("../middlewares/auth.middleware.js")
@@ -20,5 +21,6 @@ router.route('/me')
 
 router.route("/:id")
     .get(protect, restrictTo('admin', 'team_lead'), getUser)
+    .patch(protect, restrictTo('admin'), deleteUser)
 
 module.exports = router;

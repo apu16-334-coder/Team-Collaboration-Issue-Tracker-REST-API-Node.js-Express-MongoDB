@@ -135,6 +135,10 @@ const getUser = catchAsync(
             return next(new AppError(404, "User not found"));
         }
 
+        if(req.user.role === 'team_lead' && !user.isActive) {
+            return next(new AppError(404, "User not found"));
+        } 
+
         res.status(200).json({
             success: true,
             data: user
@@ -144,6 +148,60 @@ const getUser = catchAsync(
     }
 )
 
+/**
+ * updateUser
+ * Admin-only: update a user by ID
+ * PATCH /api/v1/users/:id
+ */
+const updateUser = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        const {
+            name,
+            email,
+            password,
+            role,
+            isActive
+        } = req.body
 
+        const user = await Users.findByIdAndUpdate(
+            req.user.id,
+            { name, email, password, role, isActive },
+            { returnDocument: 'after', runValidators: true }
+        );
 
-module.exports = { createUser, getAllUsers, getMe, updateMe, getUser }
+        if(!user) return next(new AppError(404, 'User not found'))
+
+        
+        res.status(200).json({
+            success: true,
+            data: user
+        });
+        // res.send("get a user by id....")
+
+    }
+)
+
+/**
+ * deleteUser
+ * Admin-only: delete a user by ID
+ * DELETE /api/v1/users/:id
+ */
+const deleteUser = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        const user = await Users.findByIdAndUpdate(
+            req.user.id,
+            { isActive: false },
+            { returnDocument: 'after', runValidators: true }
+        );
+
+        if (!user) {
+            return next(new AppError(404, "User not found"));
+        }
+
+        res.status(204).send()
+    }
+)
+
+module.exports = { createUser, getAllUsers, getMe, updateMe, getUser, deleteUser }
