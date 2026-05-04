@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
 
-const { signUp, logIn, logOut} = require("../controllers/auth.controller.js")
+const { signUp, logIn, logOut, changePassword} = require("../controllers/auth.controller.js")
+const { protect, restrictTo } = require("../middlewares/auth.middleware.js")
 
 // ----------------------
 // Auth Routes
@@ -19,6 +20,8 @@ router.post("/login", logIn);
 // POST /api/v1/auth/logout
 router.post("/logout", logOut);
 
-
+// change password of existing user
+// PATCH /api/v1/auth/change-password
+router.patch("/change-password", protect, changePassword)
 
 module.exports = router;

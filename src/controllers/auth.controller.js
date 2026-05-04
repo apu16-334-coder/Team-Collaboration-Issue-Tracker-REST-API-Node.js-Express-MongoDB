@@ -81,8 +81,6 @@ const logIn = catchAsync(
     }
 )
 
-
-
 /**
  * logout
  * return success message to clear jwt token
@@ -98,8 +96,39 @@ const logOut = catchAsync(
     }
 )
 
+/**
+ * changePassword
+ * Allows authenticated user to change their password
+ * PATCH /api/v1/auth/change-password
+ */
+const changePassword = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        const { currentPassword, newPassword } = req.body;
+
+        if(!currentPassword) return next(new AppError(400, 'currentPassword is required'));
+
+        if(!newPassword) return next(new AppError(400, 'newPassword is required'));
+
+        // Find current user + password
+        const user = await Users.findById(req.user.id).select('+password');
+        if(!user || !user.isActive) return next(new AppError(404, "User not found"));
+
+        if(! await bcrypt.compare(currentPassword, user.password)) {
+            return next(new AppError(401, 'Current password is incorrect'))
+        }
+
+        user.password = newPassword; // set new plain password
+        await user.save() // triggers pre("save") → hashing + passwordChangedAt
+
+        res.status(200).json({
+            success: true,
+            message: "Password changed successfully"
+        });       
+    }
+)
 
 
-module.exports = { signUp, logIn, logOut }
+module.exports = { signUp, logIn, logOut, changePassword }
 
 
