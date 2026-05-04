@@ -47,7 +47,7 @@ const protect = catchAsync(
         // Check if user changed password after token was issued
         if(currentUser.passwordChangedAt) {
             const changedTimestamp = parseInt (
-                currentUser.changedTimestamp.getTime() / 1000,
+                currentUser.passwordChangedAt.getTime() / 1000,
                 10
             )
 

@@ -135,9 +135,9 @@ const getUser = catchAsync(
             return next(new AppError(404, "User not found"));
         }
 
-        if(req.user.role === 'team_lead' && !user.isActive) {
+        if (req.user.role === 'team_lead' && !user.isActive) {
             return next(new AppError(404, "User not found"));
-        } 
+        }
 
         res.status(200).json({
             success: true,
@@ -170,9 +170,9 @@ const updateUser = catchAsync(
             { returnDocument: 'after', runValidators: true }
         );
 
-        if(!user) return next(new AppError(404, 'User not found'))
+        if (!user) return next(new AppError(404, 'User not found'))
 
-        
+
         res.status(200).json({
             success: true,
             data: user
@@ -204,14 +204,44 @@ const deleteUser = catchAsync(
     }
 )
 
+/**
+ * resetUserPassword
+ * Admin-only: reset a user's password
+ * PATCH /api/v1/users/:id/reset-password
+ */
+const resetUserPassword = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        const { password } = req.body;
 
+        if (!password) return next(new AppError(400, 'password is required'));
 
-module.exports = { 
-    createUser, 
-    getAllUsers, 
-    getMe, 
-    updateMe, 
-    getUser, 
-    updateUser, 
-    deleteUser
+        // find user
+        const user = await Users.findById(req.params.id);
+        if (!user || !user.isActive) return next(new AppError(404, 'User not available'));
+
+        // Prevent self-password reset through this endpoint
+        if (req.user.id === req.params.id) {
+            return next(new AppError(400, 'Can not reset your own password'));
+        }
+
+        user.password = password; // plain password
+        await user.save() // triggers pre("save") → hashing + passwordChangedAt
+
+        res.status(200).json({
+            success: true,
+            message: "Password reset successful"
+        })
+    }
+)
+
+module.exports = {
+    createUser,
+    getAllUsers,
+    getMe,
+    updateMe,
+    getUser,
+    updateUser,
+    deleteUser,
+    resetUserPassword
 }

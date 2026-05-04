@@ -19,10 +19,10 @@ const signUp = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
         // res.send('Sign up succesfully')
-        const {name, email, password} = req.body
+        const { name, email, password } = req.body
 
         // Create user in database (password will be hashed via pre-save middleware)
-        await Users.create({name, email, password});
+        await Users.create({ name, email, password });
 
         res.status(201).json({
             success: true,
@@ -42,22 +42,22 @@ const logIn = catchAsync(
         // get requested email and password
         const { email, password } = req.body;
 
-        if(!email) return next(new AppError(400, 'Email is required'));
+        if (!email) return next(new AppError(400, 'Email is required'));
 
-        if(!password) return next(new AppError(400, 'Password is required'));
+        if (!password) return next(new AppError(400, 'Password is required'));
 
         // find user + include password
-        const user = await Users.findOne({ email }).select('+password')       
+        const user = await Users.findOne({ email }).select('+password')
 
         // Constant-time response (always compare password even if user doesn't exist)
-        const hashToCompare = (user && user.isActive) 
+        const hashToCompare = (user && user.isActive)
             ? user.password
             : "$2b$12$gCPPVO/Abj4wrRg/qGdX0eF1.eizqSvFQpiUQ9MsMqc/CkC1KajxK"
 
         const isPasswordMatch = await bcrypt.compare(password, hashToCompare);
 
         // if user is not found or password does not match
-        if(!user || !user.isActive || !isPasswordMatch ) {
+        if (!user || !user.isActive || !isPasswordMatch) {
             return next(new AppError(401, "Invalid email or password"));
         }
 
@@ -81,6 +81,25 @@ const logIn = catchAsync(
     }
 )
 
-module.exports = { signUp, logIn }
+
+
+/**
+ * logout
+ * return success message to clear jwt token
+ * POST /api/v1/auth/logout
+ */
+const logOut = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        res.status(200).json({
+            success: true,
+            message: 'Logged out successfully, clear the token'
+        });
+    }
+)
+
+
+
+module.exports = { signUp, logIn, logOut }
 
 

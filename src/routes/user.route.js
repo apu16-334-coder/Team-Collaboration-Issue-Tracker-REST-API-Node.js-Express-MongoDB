@@ -7,7 +7,8 @@ const {
     updateMe, 
     getUser, 
     updateUser, 
-    deleteUser
+    deleteUser,
+    resetUserPassword
 } = require("../controllers/user.controller.js")
 
 const { protect, restrictTo } = require("../middlewares/auth.middleware.js")
@@ -39,6 +40,9 @@ router.route("/:id")
     .patch(protect, restrictTo('admin'), updateUser)
     .delete(protect, restrictTo('admin'), deleteUser)
 
-
+// Admin-only: Reset user password
+// PATCH /api/v1/users/:id/reset-password
+router.route("/:id/reset-password")
+    .patch(protect, restrictTo('admin'), resetUserPassword);
 
 module.exports = router;
