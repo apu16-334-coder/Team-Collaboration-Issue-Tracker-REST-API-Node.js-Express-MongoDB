@@ -8,6 +8,7 @@ const {
     getUser, 
     updateUser, 
     deleteUser,
+    userReactivate,
     changeUserRole,
     resetUserPassword
 } = require("../controllers/user.controller.js")
@@ -40,6 +41,11 @@ router.route("/:id")
     .get(protect, restrictTo('admin', 'team_lead'), getUser)
     .patch(protect, restrictTo('admin'), updateUser)
     .delete(protect, restrictTo('admin'), deleteUser)
+
+// Admin-only: reactivate suer
+// PATCH /api/v1/users/:id/reactivate
+router.patch('/:id/reactivate', protect, restrictTo('admin'), userReactivate)
+
 
 // Admin-only: change user role
 // PATCH /api/v1/users/:id/change-role

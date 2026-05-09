@@ -111,7 +111,7 @@ const updateMe = catchAsync(
             req.user.id,
             { name, email },
             { returnDocument: 'after', runValidators: true }
-        ).select('name email role isActive');
+        ).select('');
 
         res.status(200).json({
             success: true,
@@ -189,6 +189,11 @@ const updateUser = catchAsync(
 const deleteUser = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
+        // Prevent self deactivate through this endpoint
+        if (req.user.id === req.params.id) {
+            return next(new AppError(403, "Admin cannot deactivate his own profile"));
+        }
+
         // find user
         const user = await Users.findById(req.params.id);
         if (!user) return next(new AppError(404, 'User is not found'));
@@ -199,6 +204,36 @@ const deleteUser = catchAsync(
         res.status(204).send()
     }
 )
+
+/**
+ * userReactivate
+ * Admin-only: reactivate a user by id
+ * PATCH /api/v1/users/:id/reactivate
+ */
+
+const userReactivate = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        // Prevent self reactivate through this endpoint
+        if (req.user.id === req.params.id) {
+            return next(new AppError(403, "Admin cannot reactivate his own profile"));
+        }
+
+        // find user
+        const user = await Users.findById(req.params.id)
+        if(!user) return next(new AppError(404, 'User is not found'));
+        if(user.isActive) return next(new AppError(400, 'User is already activate'));
+
+        user.isActive = true;
+        await user.save();
+        
+        res.status(200).json({
+            success: true,
+            data: user
+        })
+    }
+)
+
 
 /**
  * changeUserRole
@@ -215,7 +250,7 @@ const changeUserRole = catchAsync(
 
         if(!role) return next(new AppError(400, 'role is required'));
 
-        // Prevent self-password reset through this endpoint
+        // Prevent self-role change through this endpoint
         if (req.user.id === req.params.id) {
             return next(new AppError(400, 'Admin can not change his own role'));
         }
@@ -275,6 +310,7 @@ module.exports = {
     getUser,
     updateUser,
     deleteUser,
+    userReactivate,
     changeUserRole,
     resetUserPassword
 }

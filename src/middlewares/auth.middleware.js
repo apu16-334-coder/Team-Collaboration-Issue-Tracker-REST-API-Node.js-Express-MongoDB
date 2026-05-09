@@ -37,7 +37,7 @@ const protect = catchAsync(
         }
 
         // get logged user
-        const currentUser = await Users.findById(decoded.id)
+        const currentUser = await Users.findById(decoded.id).select("+passwordChangedAt");
 
         // Check if user still exists
         if (!currentUser || !currentUser.isActive) {
