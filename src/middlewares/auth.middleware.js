@@ -41,7 +41,7 @@ const protect = catchAsync(
 
         // Check if user still exists
         if (!currentUser || !currentUser.isActive) {
-            return next(new AppError(401, "User no longer exists"));
+            return next(new AppError(401, "User is no longer exists"));
         }
 
         // Check if user changed password after token was issued

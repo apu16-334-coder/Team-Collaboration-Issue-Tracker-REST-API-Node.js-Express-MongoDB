@@ -8,6 +8,7 @@ const {
     getUser, 
     updateUser, 
     deleteUser,
+    changeUserRole,
     resetUserPassword
 } = require("../controllers/user.controller.js")
 
@@ -40,9 +41,12 @@ router.route("/:id")
     .patch(protect, restrictTo('admin'), updateUser)
     .delete(protect, restrictTo('admin'), deleteUser)
 
+// Admin-only: change user role
+// PATCH /api/v1/users/:id/change-role
+router.patch('/:id/change-role', protect, restrictTo('admin'), changeUserRole)
+
 // Admin-only: Reset user password
 // PATCH /api/v1/users/:id/reset-password
-router.route("/:id/reset-password")
-    .patch(protect, restrictTo('admin'), resetUserPassword);
+router.patch("/:id/reset-password", protect, restrictTo('admin'), resetUserPassword);
 
 module.exports = router;

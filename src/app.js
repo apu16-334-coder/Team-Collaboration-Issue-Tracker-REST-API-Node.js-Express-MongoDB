@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit')
 const { noRouteFound, globalErrorHandler } = require('./middlewares/error.middleware.js')
 const authRouter = require('./routes/auth.route.js')
 const userRouter = require('./routes/user.route.js')
+const teamRouter = require('./routes/team.route.js')
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.get('/', (req, res) =>{
 
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/teams', teamRouter);
 
 
 /* ---------- ERROR HANDLERS ---------- */

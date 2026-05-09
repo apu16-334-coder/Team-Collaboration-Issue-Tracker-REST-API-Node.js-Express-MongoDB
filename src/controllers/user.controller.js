@@ -107,7 +107,6 @@ const updateMe = catchAsync(
     async (req, res, next) => {
         const { name, email } = req.body;
 
-        console.log(req.user.id)
         const user = await Users.findByIdAndUpdate(
             req.user.id,
             { name, email },
@@ -132,19 +131,17 @@ const getUser = catchAsync(
         const user = await Users.findById(req.params.id)
 
         if (!user) {
-            return next(new AppError(404, "User not found"));
+            return next(new AppError(404, "User is not found"));
         }
 
-        if (req.user.role === 'team_lead' && !user.isActive) {
-            return next(new AppError(404, "User not found"));
+        if (req.user.role !== 'admin' && !user.isActive) {
+            return next(new AppError(404, "User is not found"));
         }
 
         res.status(200).json({
             success: true,
             data: user
         });
-        // res.send("get a user by id....")
-
     }
 )
 
@@ -159,26 +156,28 @@ const updateUser = catchAsync(
         const {
             name,
             email,
-            password,
-            role,
-            isActive
         } = req.body
 
-        const user = await Users.findByIdAndUpdate(
-            req.params.id,
-            { name, email, password, role, isActive },
+        // Prevent self update through this endpoint
+        if (req.user.id === req.params.id) {
+            return next(new AppError(403, "Admin cannot update his own profile here. Use /api/v1/users/me instead."));
+        }
+
+        // find user
+        const user = await Users.findById(req.params.id)
+        if (!user) return next(new AppError(404, 'User is not found'));
+        if (!user.isActive) return next(new AppError(400, 'User is not active'));
+
+        const updatedUser = await Users.findByIdAndUpdate(
+            user.id,
+            {name, email},
             { returnDocument: 'after', runValidators: true }
-        );
-
-        if (!user) return next(new AppError(404, 'User not found'))
-
+        )
 
         res.status(200).json({
             success: true,
-            data: user
+            data: updatedUser
         });
-        // res.send("get a user by id....")
-
     }
 )
 
@@ -190,17 +189,49 @@ const updateUser = catchAsync(
 const deleteUser = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        const user = await Users.findByIdAndUpdate(
-            req.params.id,
-            { isActive: false },
-            { returnDocument: 'after', runValidators: true }
-        );
+        // find user
+        const user = await Users.findById(req.params.id);
+        if (!user) return next(new AppError(404, 'User is not found'));
+        if (!user.isActive) return next(new AppError(400, 'User is already deactivated'));
 
-        if (!user) {
-            return next(new AppError(404, "User not found"));
+        user.isActive = false;
+        await user.save();
+        res.status(204).send()
+    }
+)
+
+/**
+ * changeUserRole
+ * Admin-only: reset a user's password
+ * PATCH /api/v1/users/:id/change-role
+ */
+
+const changeUserRole = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        const {
+            role
+        } = req.body
+
+        if(!role) return next(new AppError(400, 'role is required'));
+
+        // Prevent self-password reset through this endpoint
+        if (req.user.id === req.params.id) {
+            return next(new AppError(400, 'Admin can not change his own role'));
         }
 
-        res.status(204).send()
+        // find user
+        const user = await Users.findById(req.params.id)
+        if (!user) return next(new AppError(404, 'User is not found'));
+        if (!user.isActive) return next(new AppError(400, 'User is not active'));
+
+        user.role = role;
+        await user.save()
+
+        res.status(200).json({
+            success: true,
+            data: user
+        })
     }
 )
 
@@ -216,14 +247,15 @@ const resetUserPassword = catchAsync(
 
         if (!password) return next(new AppError(400, 'password is required'));
 
-        // find user
-        const user = await Users.findById(req.params.id);
-        if (!user || !user.isActive) return next(new AppError(404, 'User not available'));
-
         // Prevent self-password reset through this endpoint
         if (req.user.id === req.params.id) {
-            return next(new AppError(400, 'Can not reset your own password'));
+            return next(new AppError(400, 'Admin can not reset his own password'));
         }
+
+        // find user
+        const user = await Users.findById(req.params.id)
+        if (!user) return next(new AppError(404, 'User is not found'));
+        if (!user.isActive) return next(new AppError(400, 'User is not active'));
 
         user.password = password; // plain password
         await user.save() // triggers pre("save") → hashing + passwordChangedAt
@@ -243,5 +275,6 @@ module.exports = {
     getUser,
     updateUser,
     deleteUser,
+    changeUserRole,
     resetUserPassword
 }
