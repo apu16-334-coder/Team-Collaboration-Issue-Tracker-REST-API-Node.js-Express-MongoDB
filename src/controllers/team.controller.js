@@ -42,8 +42,27 @@ const createTeam = catchAsync(
 const getAllTeams = catchAsync(
     /** @type {RequestHandler} */
     async(req, res, next) => {
-        
-        res.send("getting all the teams....")
+        const features = new ApiFeatures(Teams.find(), req.query)
+            .filter()
+            .search('title', 'description')
+            .sort()
+            .pagination()
+
+        // execute query 
+        const teams = await features.query;
+
+        // count total without pagination
+        const total = await Teams.countDocuments(features.getQueryObjForCount());
+           
+        // Send response meta-data for pagination
+        res.status(200).json({
+            success: true,
+            results: teams.length,
+            total,
+            page: features.page,
+            limit: features.limit,
+            data: teams
+        })
     }
 )
 
@@ -55,21 +74,47 @@ const getAllTeams = catchAsync(
 const getMyTeams = catchAsync(
     /** @type {RequestHandler} */
     async(req, res, next) => {
-        
-        res.send("getting all of my teams....")
+        const features = new ApiFeatures(
+            Teams.find({teamLead: req.user.id}),
+            req.query
+        ).filter().search('title', 'description').sort().pagination();
+
+        // execute query 
+        const teams = await features.query;
+
+        // count total without pagination
+        const total = await Teams.countDocuments(features.getQueryObjForCount());
+                 
+        // Send response meta-data for pagination
+        res.status(200).json({
+            success: true,
+            results: teams.length,
+            total,
+            page: features.page,
+            limit: features.limit,
+            data: teams
+        })
+
     }
 )
 
 /**
  * GetTeam
- * (admin | team_lead of team | members of team): get a particular team by id
+ * (admin | team_lead of team): get a particular team by id
  * GET /api/v1/teams/:id
  */
 const getTeam = catchAsync(
     /** @type {RequestHandler} */
     async(req, res, next) => {
+        // Find team
+        const team = await Teams.findById(req.params.id);
+        if(!team) return next(new AppError(404, 'Team is not found'));
+
+        if(req.user.role === 'team_lead') {
+            
+        }
+
         
-        res.send("getting a particular team by id....")
     }
 )
 

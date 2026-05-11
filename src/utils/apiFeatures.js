@@ -14,6 +14,9 @@ class ApiFeatures {
 
         // Build custom query object for mongoose query
         this.customQueryObj = {...queryObj};
+
+        // Store the base filter conditions from the original query
+        this.queryConditions = query._conditions || {};
     }
 
     /**
@@ -92,6 +95,14 @@ class ApiFeatures {
 
         this.query = this.query.skip(this.skip).limit(this.limit)
         return this
+    }
+
+    /**
+     * Get the complete filter object including base conditions
+     * @returns {Object} - Combined filter for counting documents
+     */
+    getQueryObjForCount() {
+        return { ...this.queryConditions, ...this.customQueryObj };
     }
 }
 

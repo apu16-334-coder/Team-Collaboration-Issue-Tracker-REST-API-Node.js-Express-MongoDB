@@ -17,7 +17,6 @@ const createUser = catchAsync(
     async (req, res, next) => {
         const {
             name,
-            description,
             email,
             password,
             role
