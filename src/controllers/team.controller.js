@@ -16,7 +16,7 @@ const ApiFeatures = require("../utils/apiFeatures.js");
 const createTeam = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        const { title, description, teamLead, members, isActive } = req.body;
+        const { title, description, teamLead, isActive } = req.body;
 
         if (teamLead) {
 
@@ -25,7 +25,7 @@ const createTeam = catchAsync(
             }
         }
 
-        const team = await Teams.create({ title, description, teamLead, members, isActive });
+        const team = await Teams.create({ title, description, teamLead, isActive });
 
         res.status(201).json({
             success: true,
@@ -121,9 +121,6 @@ const getTeam = catchAsync(
             return next(new AppError(403, 'you can not access'));
         }
 
-        console.log(req.user.role === 'member')
-        console.log(!team.members.includes(req.user.id))
-
         // if logged user is not member of the team
         if (req.user.role === 'member' && !team.members.includes(req.user.id)) {
             return next(new AppError(403, 'you can not access'));
@@ -144,8 +141,30 @@ const getTeam = catchAsync(
 const updateTeam = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
+        console.log(req.body)
+        const { title, description, teamLead } = req.body;
 
-        res.send("updating a particular team by id....")
+        if (teamLead) {
+            if ((await Users.findById(teamLead).select('role')).role !== 'team_lead') {
+                return next(new AppError(400, 'Only users with team_lead role can be assigned as team lead'))
+            }
+        }
+
+        // Find team
+        const team = await Teams.findById(req.params.id);
+        if (!team) return next(new AppError(404, 'Team is not found'));
+        if (!team.isActive) return next(new AppError(404, 'Team is not active'));
+
+        const updatedTeam = await Teams.findByIdAndUpdate(
+            req.params.id,
+            { title, description, teamLead },
+            { returnDocument: 'after', runValidators: true }
+        );
+
+        res.status(200).json({
+            success: true,
+            data: updatedTeam
+        })
     }
 )
 
@@ -157,8 +176,40 @@ const updateTeam = catchAsync(
 const deleteTeam = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
+        // Find Team
+        const team = await Teams.findById(req.params.id)
+        if (!team) return next(new AppError(404, 'Team is not found'));
 
-        res.send("deleteing a particular team by id....")
+        if (!team.isActive) return next(new AppError(400, 'Team is already deactive'));
+
+        team.isActive = false;
+        await team.save();
+
+        res.status(204).send();
+    }
+)
+
+/**
+ * teamReactivate
+ * admin only: get a particular team by id
+ * DELETE /api/v1/teams/:id
+ */
+const teamReactivate = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        // Find Team
+        const team = await Teams.findById(req.params.id);
+        if (!team) return next(new AppError(404, 'Team is not found'));
+
+        if (team.isActive) return next(new AppError(400, 'Team is already active'));
+
+        team.isActive = true;
+        await team.save();
+
+        res.status(200).json({
+            success: true,
+            data: team
+        })
     }
 )
 
@@ -234,6 +285,7 @@ module.exports = {
     getTeam,
     updateTeam,
     deleteTeam,
+    teamReactivate,
     assignTeamLead,
     addTeamMembers,
     getTeamMembers,
