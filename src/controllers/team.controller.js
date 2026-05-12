@@ -15,17 +15,17 @@ const ApiFeatures = require("../utils/apiFeatures.js");
  */
 const createTeam = catchAsync(
     /** @type {RequestHandler} */
-    async(req, res, next) => {
-        const {title, description, teamLead, members, isActive} = req.body;
+    async (req, res, next) => {
+        const { title, description, teamLead, members, isActive } = req.body;
 
-        if(teamLead) {
+        if (teamLead) {
 
-            if((await Users.findById(teamLead).select('role')).role !== 'team_lead') {
+            if ((await Users.findById(teamLead).select('role')).role !== 'team_lead') {
                 return next(new AppError(400, 'Only users with team_lead role can be assigned as team lead'))
             }
         }
 
-        const team = await Teams.create({title, description, teamLead, members, isActive});
+        const team = await Teams.create({ title, description, teamLead, members, isActive });
 
         res.status(201).json({
             success: true,
@@ -41,7 +41,7 @@ const createTeam = catchAsync(
  */
 const getAllTeams = catchAsync(
     /** @type {RequestHandler} */
-    async(req, res, next) => {
+    async (req, res, next) => {
         const features = new ApiFeatures(Teams.find(), req.query)
             .filter()
             .search('title', 'description')
@@ -53,7 +53,7 @@ const getAllTeams = catchAsync(
 
         // count total without pagination
         const total = await Teams.countDocuments(features.getQueryObjForCount());
-           
+
         // Send response meta-data for pagination
         res.status(200).json({
             success: true,
@@ -73,9 +73,9 @@ const getAllTeams = catchAsync(
  */
 const getMyTeams = catchAsync(
     /** @type {RequestHandler} */
-    async(req, res, next) => {
+    async (req, res, next) => {
         const features = new ApiFeatures(
-            Teams.find({teamLead: req.user.id}),
+            Teams.find({ teamLead: req.user.id }),
             req.query
         ).filter().search('title', 'description').sort().pagination();
 
@@ -84,7 +84,7 @@ const getMyTeams = catchAsync(
 
         // count total without pagination
         const total = await Teams.countDocuments(features.getQueryObjForCount());
-                 
+
         // Send response meta-data for pagination
         res.status(200).json({
             success: true,
@@ -105,16 +105,34 @@ const getMyTeams = catchAsync(
  */
 const getTeam = catchAsync(
     /** @type {RequestHandler} */
-    async(req, res, next) => {
+    async (req, res, next) => {
         // Find team
         const team = await Teams.findById(req.params.id);
-        if(!team) return next(new AppError(404, 'Team is not found'));
+        if (!team) return next(new AppError(404, 'Team is not found'));
 
-        if(req.user.role === 'team_lead') {
-            
+        // if logged user is not admin
+        if (req.user.role !== 'admin') {
+            // then if team is not active
+            if (!team.isActive) return next(new AppError(404, 'Team is not found'));
         }
 
-        
+        // if logged user is not team lead of the team
+        if (req.user.role === 'team_lead' && team.teamLead.toString() !== req.user.id) {
+            return next(new AppError(403, 'you can not access'));
+        }
+
+        console.log(req.user.role === 'member')
+        console.log(!team.members.includes(req.user.id))
+
+        // if logged user is not member of the team
+        if (req.user.role === 'member' && !team.members.includes(req.user.id)) {
+            return next(new AppError(403, 'you can not access'));
+        }
+
+        res.status(200).json({
+            success: true,
+            data: team
+        })
     }
 )
 
@@ -125,8 +143,8 @@ const getTeam = catchAsync(
  */
 const updateTeam = catchAsync(
     /** @type {RequestHandler} */
-    async(req, res, next) => {
-        
+    async (req, res, next) => {
+
         res.send("updating a particular team by id....")
     }
 )
@@ -138,8 +156,8 @@ const updateTeam = catchAsync(
  */
 const deleteTeam = catchAsync(
     /** @type {RequestHandler} */
-    async(req, res, next) => {
-        
+    async (req, res, next) => {
+
         res.send("deleteing a particular team by id....")
     }
 )
@@ -151,8 +169,8 @@ const deleteTeam = catchAsync(
  */
 const assignTeamLead = catchAsync(
     /** @type {RequestHandler} */
-    async(req, res, next) => {
-        
+    async (req, res, next) => {
+
         res.send("Assigning a team_lead to a team by id....")
     }
 )
@@ -162,10 +180,10 @@ const assignTeamLead = catchAsync(
  * admin only: Adding members in a particulat team by id
  * POST /api/v1/teams/:id/members
  */
-const  addTeamMembers= catchAsync(
+const addTeamMembers = catchAsync(
     /** @type {RequestHandler} */
-    async(req, res, next) => {
-        
+    async (req, res, next) => {
+
         res.send("Adding members in a particulat team by id....")
     }
 )
@@ -175,10 +193,10 @@ const  addTeamMembers= catchAsync(
  * (admin, team_lead): Getting members in a particulat team by id
  * GET /api/v1/teams/:id/members
  */
-const  getTeamMembers= catchAsync(
+const getTeamMembers = catchAsync(
     /** @type {RequestHandler} */
-    async(req, res, next) => {
-        
+    async (req, res, next) => {
+
         res.send("Getting members in a particulat team by id....")
     }
 )
@@ -188,10 +206,10 @@ const  getTeamMembers= catchAsync(
  * (admin only): delete a member in a particulat team by id
  * DELETE /api/v1/teams/:id/members/:userId
  */
-const  deleteTeamMember= catchAsync(
+const deleteTeamMember = catchAsync(
     /** @type {RequestHandler} */
-    async(req, res, next) => {
-        
+    async (req, res, next) => {
+
         res.send("Getting members in a particulat team by id....")
     }
 )
@@ -201,10 +219,10 @@ const  deleteTeamMember= catchAsync(
  * (admin | team_lead | team members) : Get all the projects of a particular team
  * GET /api/v1/teams/:id/projects
  */
-const  getTeamProjects= catchAsync(
+const getTeamProjects = catchAsync(
     /** @type {RequestHandler} */
-    async(req, res, next) => {
-        
+    async (req, res, next) => {
+
         res.send("Getting members in a particulat team by id....")
     }
 )
