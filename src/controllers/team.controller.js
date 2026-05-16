@@ -16,16 +16,18 @@ const ApiFeatures = require("../utils/apiFeatures.js");
 const createTeam = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        const { title, description, teamLead, isActive } = req.body;
+        // If request body is invalid
+        if(!req.body) return next(new AppError(400, 'Not valid request body'));
+        
+        const filtered = filterBody(req.body, 'title', 'description', 'teamLead', 'isActive')
 
-        if (teamLead) {
-
+        if (filtered.teamLead) {
             if ((await Users.findById(teamLead).select('role')).role !== 'team_lead') {
                 return next(new AppError(400, 'Only users with team_lead role can be assigned as team lead'))
             }
         }
 
-        const team = await Teams.create({ title, description, teamLead, isActive });
+        const team = await Teams.create(filtered);
 
         res.status(201).json({
             success: true,
@@ -135,16 +137,20 @@ const getTeam = catchAsync(
 
 /**
  * UpdateTeam
- * admin only: get a particular team by id
+ * admin only: update a particular team title/ description/ team_lead by id
  * PATCH /api/v1/teams/:id
  */
 const updateTeam = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        console.log(req.body)
-        const { title, description, teamLead } = req.body;
+        // If request body is invalid
+        if(!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        if (teamLead) {
+        const filtered = filterBody(req.body, 'title', 'description', 'teamLead');
+
+        if(Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
+
+        if (filtered.teamLead) {
             if ((await Users.findById(teamLead).select('role')).role !== 'team_lead') {
                 return next(new AppError(400, 'Only users with team_lead role can be assigned as team lead'))
             }
@@ -157,7 +163,7 @@ const updateTeam = catchAsync(
 
         const updatedTeam = await Teams.findByIdAndUpdate(
             req.params.id,
-            { title, description, teamLead },
+            filtered,
             { returnDocument: 'after', runValidators: true }
         );
 
@@ -214,19 +220,6 @@ const teamReactivate = catchAsync(
 )
 
 /**
- * AssignTeamLead
- * admin only: Assign a team_lead to a team by id
- * PATCH /api/v1/teams/:id/assign-lead
- */
-const assignTeamLead = catchAsync(
-    /** @type {RequestHandler} */
-    async (req, res, next) => {
-
-        res.send("Assigning a team_lead to a team by id....")
-    }
-)
-
-/**
  * AddTeamMembers
  * admin only: Adding members in a particulat team by id
  * POST /api/v1/teams/:id/members
@@ -234,7 +227,6 @@ const assignTeamLead = catchAsync(
 const addTeamMembers = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-
         res.send("Adding members in a particulat team by id....")
     }
 )
@@ -286,7 +278,6 @@ module.exports = {
     updateTeam,
     deleteTeam,
     teamReactivate,
-    assignTeamLead,
     addTeamMembers,
     getTeamMembers,
     deleteTeamMember,

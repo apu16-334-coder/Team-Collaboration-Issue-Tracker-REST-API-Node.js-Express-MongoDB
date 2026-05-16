@@ -6,7 +6,6 @@ const {
     updateTeam,
     deleteTeam,
     teamReactivate,
-    assignTeamLead,
     addTeamMembers,
     getTeamMembers,
     deleteTeamMember,
@@ -45,11 +44,6 @@ router.route("/:id")
 // only admin: reactivate a team by id
 // PATCH /api.v1/teams/:id/reactivate → reactivate a team
 router.patch('/:id/reactivate', restrictTo('admin'), teamReactivate)
-
-
-// only admin: reassign a lead of team by id
-// PATCH /api.v1/teams/:id/assign-lead → assign lead of a team
-router.patch('/:id/assign-lead', restrictTo('admin'), assignTeamLead)
 
 // only admin: add or get members of a team by id
 // POST /api.v1/teams/:id/members → add member of a team

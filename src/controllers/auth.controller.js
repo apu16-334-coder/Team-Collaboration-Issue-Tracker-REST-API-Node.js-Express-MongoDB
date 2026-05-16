@@ -18,11 +18,13 @@ const jwt = require("jsonwebtoken");
 const signUp = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        // res.send('Sign up succesfully')
-        const { name, email, password } = req.body
+        // If request body is invalid
+        if(!req.body) return next(new AppError(400, 'Not valid request body'));
+
+        const filtered = filterBody(req.body, 'name', 'email', 'password')
 
         // Create user in database (password will be hashed via pre-save middleware)
-        await Users.create({ name, email, password });
+        await Users.create(filtered);
 
         res.status(201).json({
             success: true,
@@ -39,6 +41,9 @@ const signUp = catchAsync(
 const logIn = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
+        // If request body is invalid
+        if(!req.body) return next(new AppError(400, 'Not valid request body'));
+
         // get requested email and password
         const { email, password } = req.body;
 
@@ -104,6 +109,9 @@ const logOut = catchAsync(
 const changePassword = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
+        // If request body is invalid
+        if(!req.body) return next(new AppError(400, 'Not valid request body'));
+
         const { currentPassword, newPassword } = req.body;
 
         if(!currentPassword) return next(new AppError(400, 'currentPassword is required'));
