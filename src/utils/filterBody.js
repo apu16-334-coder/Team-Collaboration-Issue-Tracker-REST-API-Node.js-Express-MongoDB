@@ -3,7 +3,6 @@ const filterBody = (body, ...allowedFields) =>{
 
     allowedFields.forEach(field => {
         if(body.hasOwnProperty(field)) {
-
             filtered[field] = body[field]
         }
     })

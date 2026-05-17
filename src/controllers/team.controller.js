@@ -17,8 +17,8 @@ const createTeam = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
         // If request body is invalid
-        if(!req.body) return next(new AppError(400, 'Not valid request body'));
-        
+        if (!req.body) return next(new AppError(400, 'Not valid request body'));
+
         const filtered = filterBody(req.body, 'title', 'description', 'teamLead', 'isActive')
 
         if (filtered.teamLead) {
@@ -51,7 +51,10 @@ const getAllTeams = catchAsync(
             .pagination()
 
         // execute query 
-        const teams = await features.query;
+        const teams = await features.query.populate([
+            { path: 'teamLead', select: 'name email' },
+            { path: 'members', select: 'name email' }
+        ]);
 
         // count total without pagination
         const total = await Teams.countDocuments(features.getQueryObjForCount());
@@ -77,12 +80,15 @@ const getMyTeams = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
         const features = new ApiFeatures(
-            Teams.find({ teamLead: req.user.id }),
+            Teams.find({ teamLead: req.user.id, isActive: true }),
             req.query
         ).filter().search('title', 'description').sort().pagination();
 
         // execute query 
-        const teams = await features.query;
+        const teams = await features.query.populate([
+            { path: 'teamLead', select: 'name' },
+            { path: 'members', select: 'name email' }
+        ]);
 
         // count total without pagination
         const total = await Teams.countDocuments(features.getQueryObjForCount());
@@ -96,7 +102,6 @@ const getMyTeams = catchAsync(
             limit: features.limit,
             data: teams
         })
-
     }
 )
 
@@ -109,7 +114,12 @@ const getTeam = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
         // Find team
-        const team = await Teams.findById(req.params.id);
+        const team = await Teams.findById(req.params.id)
+            .populate([
+                { path: 'teamLead', select: 'name email' },
+                { path: 'members', select: 'name email' }
+            ]);
+
         if (!team) return next(new AppError(404, 'Team is not found'));
 
         // if logged user is not admin
@@ -119,7 +129,7 @@ const getTeam = catchAsync(
         }
 
         // if logged user is not team lead of the team
-        if (req.user.role === 'team_lead' && team.teamLead.toString() !== req.user.id) {
+        if (req.user.role === 'team_lead' && team.teamLead.id.toString() !== req.user.id) {
             return next(new AppError(403, 'you can not access'));
         }
 
@@ -144,11 +154,11 @@ const updateTeam = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
         // If request body is invalid
-        if(!req.body) return next(new AppError(400, 'Not valid request body'));
+        if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
         const filtered = filterBody(req.body, 'title', 'description', 'teamLead');
 
-        if(Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
+        if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
 
         if (filtered.teamLead) {
             if ((await Users.findById(teamLead).select('role')).role !== 'team_lead') {
@@ -227,7 +237,44 @@ const teamReactivate = catchAsync(
 const addTeamMembers = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        res.send("Adding members in a particulat team by id....")
+        if (!req.body) return next(new AppError(400, 'Invaild requests body'))
+
+        let { members } = req.body
+
+        if (!members) return next(new AppError(400, 'members is required'))
+
+        if (!Array.isArray(members)) members = [members];
+
+        if (members.length === 0) return next(new AppError(400, 'members array cannot be empty'));
+
+        const validUsersId = await Users.find(
+            { _id: { $in: members }, role: "member", isActive: true }
+        ).select('id');
+
+        console.log(validUsersId)
+
+        // let invalidUsersId = [...members];
+
+        
+
+
+
+        
+
+        
+
+
+
+        const team = await Teams.findByIdAndUpdate(
+            req.params.id,
+            { $addToSet: { members: { $each: members } } },
+            { returnDocument: 'after', runValidators: true }
+        );
+
+        res.status(200).json({
+            success: true,
+            data: team
+        })
     }
 )
 

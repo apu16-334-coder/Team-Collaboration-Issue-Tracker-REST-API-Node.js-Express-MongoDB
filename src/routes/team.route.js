@@ -60,6 +60,4 @@ router.delete('/:id/members/:userId', restrictTo('admin'), deleteTeamMember)
 // DELETE /api.v1/teams/:id/projects
 router.get('/:id/projects', getTeamProjects)
 
-
-
 module.exports = router;

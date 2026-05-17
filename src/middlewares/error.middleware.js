@@ -16,6 +16,14 @@ const globalErrorHandler = (err, req, res, next) => {
         err.status = 400;
     }
 
+    // Mongoose cast errors
+    if(err.name === "CastError") {
+        err.status = 400;
+        if(err.path === '_id') {         
+            err.message = `Invalid id: "${err.value}"`
+        }
+    }
+
     // MongoDB duplicate key error (unique constraint)
     if(err.code === 11000) {
         err = new AppError(400, `${Object.keys(err.keyValue)} is already exists`);
