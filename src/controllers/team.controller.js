@@ -3,6 +3,7 @@ const Users = require("../models/user.model.js")
 const catchAsync = require('../utils/catchAsync.js')
 const AppError = require("../utils/AppError.js");
 const ApiFeatures = require("../utils/apiFeatures.js");
+const mongoose = require('mongoose');
 
 /**
  * @typedef {import('express').RequestHandler} RequestHandler
@@ -247,23 +248,37 @@ const addTeamMembers = catchAsync(
 
         if (members.length === 0) return next(new AppError(400, 'members array cannot be empty'));
 
-        const validUsersId = await Users.find(
-            { _id: { $in: members }, role: "member", isActive: true }
-        ).select('id');
 
-        console.log(validUsersId)
+        let errors = [];
 
-        // let invalidUsersId = [...members];
+        // 1. Invalid ObjectId format
+        const invalidIds = members.filter(id => !mongoose.Types.ObjectId.isValid(id));
+        if (invalidIds.length > 0) {
+            errors.push(`Invalid ID format: [${invalidIds.join(', ')}]`);
+        }
 
-        
+        const validIds = members.filter(id => mongoose.Types.ObjectId.isValid(id));
 
+        // 2. Non-existing
+        const existingUsers = await Users.find(
+            { _id: { $in: validIds }, isActive: true }
+        ).select('id role');
 
+        const existingIds = existingUsers.map(u => u.id);
+        const nonExistingIds = validIds.filter(id => !existingIds.includes(id));
+        if (nonExistingIds.length > 0) {
+            errors.push(`Non-existing user Ids: [${nonExistingIds.join(', ')}]`);
+        }
 
-        
+        // 3. Wrong role
+        const wrongRoleUsers = existingUsers.filter(u => u.role !== 'member');
+        if (wrongRoleUsers.length > 0) {
+            errors.push(`Users without member role(user must be member): [${wrongRoleUsers.map(u => u.id).join(', ')}]`);
+        }
 
-        
-
-
+        if (errors.length > 0) {
+            return next(new AppError(400, errors.join(' | ')));
+        }
 
         const team = await Teams.findByIdAndUpdate(
             req.params.id,
