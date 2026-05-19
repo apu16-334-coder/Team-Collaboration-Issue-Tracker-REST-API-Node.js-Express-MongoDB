@@ -7,8 +7,7 @@ const {
     deleteTeam,
     teamReactivate,
     addTeamMembers,
-    getTeamMembers,
-    deleteTeamMember,
+    removeTeamMember,
     getTeamProjects
 } = require("../controllers/team.controller.js");
 
@@ -48,13 +47,11 @@ router.patch('/:id/reactivate', restrictTo('admin'), teamReactivate)
 // only admin: add or get members of a team by id
 // POST /api.v1/teams/:id/members → add member of a team
 // GET /api.v1/teams/:id/members → get members of a team
-router.route("/:id/members")
-    .post(restrictTo('admin'), addTeamMembers)
-    .get(restrictTo('admin', 'team_lead'), getTeamMembers)
+router.post("/:id/members", restrictTo('admin'), addTeamMembers)
 
 // only admin: remove member of a team
 // DELETE /api.v1/teams/:id/members/:userId 
-router.delete('/:id/members/:userId', restrictTo('admin'), deleteTeamMember)
+router.delete('/:id/members/:userId', restrictTo('admin'), removeTeamMember)
 
 // admin/ team_lead/ member: get projects of a team
 // DELETE /api.v1/teams/:id/projects

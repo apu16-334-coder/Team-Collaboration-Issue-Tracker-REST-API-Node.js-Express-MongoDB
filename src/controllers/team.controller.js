@@ -176,7 +176,10 @@ const updateTeam = catchAsync(
             req.params.id,
             filtered,
             { returnDocument: 'after', runValidators: true }
-        );
+        ).populate([
+            { path: 'teamLead', select: 'name email' },
+            { path: 'members', select: 'name email' }
+        ])
 
         res.status(200).json({
             success: true,
@@ -238,20 +241,22 @@ const teamReactivate = catchAsync(
 const addTeamMembers = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        if (!req.body) return next(new AppError(400, 'Invaild requests body'))
+        // If request body has invalid input
+        if (!req.body) return next(new AppError(400, 'Invaild request body'))
 
+        // get members
         let { members } = req.body
-
         if (!members) return next(new AppError(400, 'members is required'))
-
+        
+        // if members is not array, set as an array.
         if (!Array.isArray(members)) members = [members];
 
+        // check if members array is empty
         if (members.length === 0) return next(new AppError(400, 'members array cannot be empty'));
-
 
         let errors = [];
 
-        // 1. Invalid ObjectId format
+        // Invalid ObjectId format
         const invalidIds = members.filter(id => !mongoose.Types.ObjectId.isValid(id));
         if (invalidIds.length > 0) {
             errors.push(`Invalid ID format: [${invalidIds.join(', ')}]`);
@@ -259,18 +264,21 @@ const addTeamMembers = catchAsync(
 
         const validIds = members.filter(id => mongoose.Types.ObjectId.isValid(id));
 
-        // 2. Non-existing
+        // Find existing users
         const existingUsers = await Users.find(
             { _id: { $in: validIds }, isActive: true }
         ).select('id role');
 
+        // get existing users id
         const existingIds = existingUsers.map(u => u.id);
+
+        // get non-existing users id
         const nonExistingIds = validIds.filter(id => !existingIds.includes(id));
         if (nonExistingIds.length > 0) {
             errors.push(`Non-existing user Ids: [${nonExistingIds.join(', ')}]`);
         }
 
-        // 3. Wrong role
+        // Wrong role
         const wrongRoleUsers = existingUsers.filter(u => u.role !== 'member');
         if (wrongRoleUsers.length > 0) {
             errors.push(`Users without member role(user must be member): [${wrongRoleUsers.map(u => u.id).join(', ')}]`);
@@ -284,7 +292,10 @@ const addTeamMembers = catchAsync(
             req.params.id,
             { $addToSet: { members: { $each: members } } },
             { returnDocument: 'after', runValidators: true }
-        );
+        ).populate([
+            { path: 'teamLead', select: 'name email' },
+            { path: 'members', select: 'name email' }
+        ])
 
         res.status(200).json({
             success: true,
@@ -294,28 +305,34 @@ const addTeamMembers = catchAsync(
 )
 
 /**
- * GetTeamMembers
- * (admin, team_lead): Getting members in a particulat team by id
- * GET /api/v1/teams/:id/members
- */
-const getTeamMembers = catchAsync(
-    /** @type {RequestHandler} */
-    async (req, res, next) => {
-
-        res.send("Getting members in a particulat team by id....")
-    }
-)
-
-/**
  * DeleteTeamMember
  * (admin only): delete a member in a particulat team by id
  * DELETE /api/v1/teams/:id/members/:userId
  */
-const deleteTeamMember = catchAsync(
+const removeTeamMember = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
+        // find team
+        const team = await Teams.findById(req.params.id);
+        if(!team) return next(new AppError(404, 'Team is not found'));
 
-        res.send("Getting members in a particulat team by id....")
+        if(!team.members.includes(req.params.userId)) {
+            return next (new AppError(404, 'User is not a member of this team'));
+        }
+        
+        const updatedTeam = await Teams.findByIdAndUpdate(
+            req.params.id,
+            { $pull: { members: req.params.userId } },
+            { returnDocument: 'after', runValidators: true }
+        ).populate([
+            { path: 'teamLead', select: 'name email' },
+            { path: 'members', select: 'name email' }
+        ])
+
+        res.status(200).json({
+            success: true,
+            data: updatedTeam
+        })       
     }
 )
 
@@ -341,7 +358,6 @@ module.exports = {
     deleteTeam,
     teamReactivate,
     addTeamMembers,
-    getTeamMembers,
-    deleteTeamMember,
+    removeTeamMember,
     getTeamProjects
 };
