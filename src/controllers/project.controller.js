@@ -57,9 +57,7 @@ const getAllProjects = catchAsync(
             .pagination()
 
         // execute query 
-        const projects = await features.query.populate([
-            { path: 'team', select: 'title' }
-        ]);
+        const projects = await features.query.populate('team', 'title');
 
         // count total without pagination
         const total = await Projects.countDocuments(features.getQueryObjForCount());
@@ -76,12 +74,49 @@ const getAllProjects = catchAsync(
     }
 )
 
+/**
+ * getProject
+ * (admin | team_lead of team): get a particular project by id
+ * GET /api/v1/projects/:id
+ */
+const getProject = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        // Find team
+        const project = await Projects.findById(req.params.id)
+            .populate('team', 'title teamLead members');
+
+        if (!project) return next(new AppError(404, 'project is not found'));
+
+        // if logged user is not admin
+        if (req.user.role !== 'admin') {
+            // then if project is archived
+            if (project.status === 'archived') return next(new AppError(404, 'Project is not found'));
+        }
+
+        // if logged user is not team lead of the team of project
+        if (req.user.role === 'team_lead' && project.team.teamLead.toString() !== req.user.id) {
+            return next(new AppError(403, 'you can not access'));
+        }
+
+        // if logged user is not member of the team of project
+        if (req.user.role === 'member' && !project.team.members.includes(req.user.id)) {
+            return next(new AppError(403, 'you can not access'));
+        }
+
+        res.status(200).json({
+            success: true,
+            data: project
+        })
+    }
+)
+
 
 
 module.exports = {
     createProject,
     getAllProjects,
-    // getProject,
+    getProject,
     // updateTeam,
     // deleteTeam,
     // teamReactivate

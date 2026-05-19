@@ -1,10 +1,7 @@
 const {
     createProject,
     getAllProjects,
-    // getProject,
-    // updateTeam,
-    // deleteTeam,
-    // teamReactivate
+    getProject,
 } = require("../controllers/project.controller.js");
 
 const { protect, restrictTo } = require("../middlewares/auth.middleware.js");
@@ -23,6 +20,14 @@ router.route("/")
     .post(restrictTo('admin', 'team_lead'), createProject)
     .get(restrictTo('admin'), getAllProjects)
 
-
+// admin/ team_lead/ member: get a particular project by id;
+// (admin/ team_lead): team_lead can update only (titile, description, status)
+// admin: delete a project by id
+// GET /api.v1/projects/:id → get a project
+// PATCH /api.v1/projects/:id → update a project
+// DELETE /api.v1/projects/:id → delete a project
+router.route("/:id")
+    .get(getProject)
+    
 
 module.exports = router;

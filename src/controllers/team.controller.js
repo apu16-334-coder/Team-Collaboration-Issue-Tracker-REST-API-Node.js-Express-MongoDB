@@ -109,7 +109,7 @@ const getMyTeams = catchAsync(
 
 /**
  * GetTeam
- * (admin | team_lead of team): get a particular team by id
+ * (admin | team_lead of team | members of team): get a particular team by id
  * GET /api/v1/teams/:id
  */
 const getTeam = catchAsync(
@@ -285,6 +285,7 @@ const addTeamMembers = catchAsync(
             errors.push(`Users without member role(user must be member): [${wrongRoleUsers.map(u => u.id).join(', ')}]`);
         }
 
+        // if atleast one error is occurred
         if (errors.length > 0) {
             return next(new AppError(400, errors.join(' | ')));
         }
