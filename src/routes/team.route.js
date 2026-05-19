@@ -16,7 +16,7 @@ const { protect, restrictTo } = require("../middlewares/auth.middleware.js");
 const router = require("express").Router();
 
 // ----------------------
-// User Routes
+// Team Routes
 // ----------------------
 
 // Admin-only: Create new team or get all teams

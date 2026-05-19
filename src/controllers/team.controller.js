@@ -3,6 +3,7 @@ const Users = require("../models/user.model.js")
 const catchAsync = require('../utils/catchAsync.js')
 const AppError = require("../utils/AppError.js");
 const ApiFeatures = require("../utils/apiFeatures.js");
+const filterBody = require("../utils/filterBody.js");
 const mongoose = require('mongoose');
 
 /**
@@ -11,7 +12,7 @@ const mongoose = require('mongoose');
 
 /**
  * createTeam
- * Admin-only: create a new user
+ * Admin-only: create a new team
  * POST /api/v1/teams
  */
 const createTeam = catchAsync(

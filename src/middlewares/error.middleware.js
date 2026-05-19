@@ -12,7 +12,7 @@ const globalErrorHandler = (err, req, res, next) => {
     console.error(err.stack);
 
     // Mongoose validation or cast errors
-    if(err.name === "ValidationError" || err.name === "CastError") {
+    if(err.name === "ValidationError") {
         err.status = 400;
     }
 

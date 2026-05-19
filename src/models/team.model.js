@@ -14,15 +14,22 @@ const teamSchema = new mongoose.Schema({
         type: String,
         trim: true,
     },
-    teamLead: { 
-        type: mongoose.Schema.ObjectId, 
-        ref: 'User', 
+    teamLead: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
         required: [true, "teamLead is required"],
         index: true
     },  // single lead
-    members: [{ type: mongoose.Schema.ObjectId, ref: 'User', index: true }], // excludes lead
-    isActive: { type: Boolean, default: true },
-    
+    members: [{
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+        index: true
+    }], // excludes lead
+    isActive: {
+        type: Boolean,
+        default: true
+    },
+
 }, {
     timestamps: true
 });
