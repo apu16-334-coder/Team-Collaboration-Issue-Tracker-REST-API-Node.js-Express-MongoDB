@@ -3,6 +3,7 @@ const {
     getAllProjects,
     getProject,
     updateProject,
+    deleteProject
 } = require("../controllers/project.controller.js");
 
 const { protect, restrictTo } = require("../middlewares/auth.middleware.js");
@@ -30,6 +31,6 @@ router.route("/")
 router.route("/:id")
     .get(getProject)
     .patch(restrictTo('admin', 'team_lead'), updateProject)
-    
+    .delete(restrictTo('admin'), deleteProject)
 
 module.exports = router;

@@ -178,6 +178,27 @@ const updateProject = catchAsync(
     }
 )
 
+/**
+ * DeleteTeam
+ * admin only: get a particular team by id
+ * DELETE /api/v1/teams/:id
+ */
+const deleteProject = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        // Find Team
+        const project = await Projects.findById(req.params.id)
+        if (!project) return next(new AppError(404, 'project is not found'));
+
+        if (project.status === 'archived') return next(new AppError(400, 'project is already archived'));
+
+        project.status = 'archived';
+        await project.save();
+
+        res.status(204).send();
+    }
+)
+
 
 
 
@@ -186,4 +207,5 @@ module.exports = {
     getAllProjects,
     getProject,
     updateProject,
+    deleteProject
 };
