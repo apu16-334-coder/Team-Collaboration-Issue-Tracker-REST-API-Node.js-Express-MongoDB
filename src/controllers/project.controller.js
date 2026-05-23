@@ -124,10 +124,10 @@ const updateProject = catchAsync(
 
         let allowedFields, archivedMessage;
 
-        if(req.user.role === 'admin') {
+        if (req.user.role === 'admin') {
             allowedFields = ['title', 'description', 'status', 'team', 'dueDate'];
             archivedMessage = 'Project is archived'
-        }else {
+        } else {
             allowedFields = ['title', 'description', 'status'];
             archivedMessage = 'Project is not found'
         }
@@ -137,10 +137,10 @@ const updateProject = catchAsync(
         if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
 
         // if logged user is team_lead
-        if(req.user.role === 'team_lead' && filtered.status) {
+        if (req.user.role === 'team_lead' && filtered.status) {
             const allowedStatus = ['planning', 'active', 'on_hold', 'completed']
             // the if status is not allowed
-            if(!allowedStatus.includes(filtered.status)) return next(new AppError(400, `Team_lead of project's team can only set status as ${allowedStatus}`))
+            if (!allowedStatus.includes(filtered.status)) return next(new AppError(400, `Team_lead of project's team can only set status as ${allowedStatus}`))
         }
 
         // check if team is here
@@ -158,7 +158,7 @@ const updateProject = catchAsync(
         if (!project) return next(new AppError(404, 'Team is not found'));
 
         // then if project is archived
-        if (project.status === 'archived' ) return next(new AppError(404, archivedMessage));
+        if (project.status === 'archived') return next(new AppError(404, archivedMessage));
 
         // if logged user is not team lead of the team of project
         if (req.user.role === 'team_lead' && project.team.teamLead.toString() !== req.user.id) return next(new AppError(403, 'You can not update this project'));
@@ -198,9 +198,6 @@ const deleteProject = catchAsync(
         res.status(204).send();
     }
 )
-
-
-
 
 module.exports = {
     createProject,

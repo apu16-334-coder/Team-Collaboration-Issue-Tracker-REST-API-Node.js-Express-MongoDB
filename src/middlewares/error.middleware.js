@@ -25,7 +25,13 @@ const globalErrorHandler = (err, req, res, next) => {
 
     // MongoDB duplicate key error (unique constraint)
     if(err.code === 11000) {
-        err = new AppError(400, `${Object.keys(err.keyValue)} is already exists`);
+        console.log(err);
+        
+        if(err.keyValue.title && err.keyValue.team) {
+            err = new AppError(400, `In a same team, same project title can not be there`);
+        }else {
+            err = new AppError(400, `${Object.keys(err.keyValue)} is already exist`);
+        }
     }
 
     res.status(err.status || 500).json({

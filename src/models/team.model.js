@@ -48,6 +48,6 @@ const transform = (doc, ret) => {
 teamSchema.set("toJSON", { transform });
 teamSchema.set("toObject", { transform });
 
-const Users = mongoose.model('Team', teamSchema);
+const Teams = mongoose.model('Team', teamSchema);
 
-module.exports = Users;
+module.exports = Teams;

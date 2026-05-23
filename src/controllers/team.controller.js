@@ -17,14 +17,17 @@ const mongoose = require('mongoose');
  */
 const createTeam = catchAsync(
     /** @type {RequestHandler} */
-    async (req, res, next) => {
+    async (req, res, next) => {   
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
         const filtered = filterBody(req.body, 'title', 'description', 'teamLead', 'isActive')
 
+        console.log(filtered.teamLead)
+        console.log(await Users.findById(filtered.teamLead).select('role'))
+
         if (filtered.teamLead) {
-            if ((await Users.findById(teamLead).select('role')).role !== 'team_lead') {
+            if ((await Users.findById(filtered.teamLead).select('role'))?.role !== 'team_lead') {
                 return next(new AppError(400, 'Only users with team_lead role can be assigned as team lead'))
             }
         }
@@ -248,7 +251,7 @@ const addTeamMembers = catchAsync(
         // get members
         let { members } = req.body
         if (!members) return next(new AppError(400, 'members is required'))
-        
+
         // if members is not array, set as an array.
         if (!Array.isArray(members)) members = [members];
 
@@ -316,12 +319,12 @@ const removeTeamMember = catchAsync(
     async (req, res, next) => {
         // find team
         const team = await Teams.findById(req.params.id);
-        if(!team) return next(new AppError(404, 'Team is not found'));
+        if (!team) return next(new AppError(404, 'Team is not found'));
 
-        if(!team.members.includes(req.params.userId)) {
-            return next (new AppError(404, 'User is not a member of this team'));
+        if (!team.members.includes(req.params.userId)) {
+            return next(new AppError(404, 'User is not a member of this team'));
         }
-        
+
         const updatedTeam = await Teams.findByIdAndUpdate(
             req.params.id,
             { $pull: { members: req.params.userId } },
@@ -334,7 +337,7 @@ const removeTeamMember = catchAsync(
         res.status(200).json({
             success: true,
             data: updatedTeam
-        })       
+        })
     }
 )
 

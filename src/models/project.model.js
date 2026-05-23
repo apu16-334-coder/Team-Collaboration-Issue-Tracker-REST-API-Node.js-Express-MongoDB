@@ -40,6 +40,8 @@ const projectSchema = new mongoose.Schema({
     timestamps: true
 });
 
+projectSchema.index({ title: 1, team: 1 });
+
 // Transform output for JSON / Object
 // Remove _id and __v, add id string
 const transform = (doc, ret) => {
