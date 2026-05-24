@@ -27,7 +27,8 @@ const teamSchema = new mongoose.Schema({
     }], // excludes lead
     isActive: {
         type: Boolean,
-        default: true
+        default: true,
+        index: true
     },
 
 }, {

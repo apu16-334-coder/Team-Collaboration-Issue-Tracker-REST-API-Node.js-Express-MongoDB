@@ -293,14 +293,16 @@ const addTeamMembers = catchAsync(
             return next(new AppError(400, errors.join(' | ')));
         }
 
-        const team = await Teams.findByIdAndUpdate(
-            req.params.id,
+        const team = await Teams.findOneAndUpdate(
+            { _id: req.params.id, isActive: true },
             { $addToSet: { members: { $each: members } } },
             { returnDocument: 'after', runValidators: true }
         ).populate([
             { path: 'teamLead', select: 'name email' },
             { path: 'members', select: 'name email' }
         ])
+
+        if (!team) return next(new AppError(404, 'Team is not found'));
 
         res.status(200).json({
             success: true,
@@ -320,6 +322,7 @@ const removeTeamMember = catchAsync(
         // find team
         const team = await Teams.findById(req.params.id);
         if (!team) return next(new AppError(404, 'Team is not found'));
+        if (!team.isActive) return next(new AppError(404, 'Team is not active'));
 
         if (!team.members.includes(req.params.userId)) {
             return next(new AppError(404, 'User is not a member of this team'));

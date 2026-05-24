@@ -76,7 +76,7 @@ const getAllProjects = catchAsync(
 
 /**
  * getProject
- * (admin | team_lead of team): get a particular project by id
+ * (admin | team_lead of team | member): get a particular project by id
  * GET /api/v1/projects/:id
  */
 const getProject = catchAsync(
@@ -91,15 +91,15 @@ const getProject = catchAsync(
         // if logged user is not admin
         if (req.user.role !== 'admin') {
             // then if project is archived
-            if (project.status === 'archived') return next(new AppError(404, 'Project is not found'));
+            if (project.status === 'archived' || project.status === 'cancelled') return next(new AppError(404, 'Project is not found'));
         }
 
-        // if logged user is not team lead of the team of project
+        // if logged user is not team lead of this project team
         if (req.user.role === 'team_lead' && project.team.teamLead.toString() !== req.user.id) {
             return next(new AppError(403, 'you can not access'));
         }
 
-        // if logged user is not member of the team of project
+        // if logged user is not member of this project team
         if (req.user.role === 'member' && !project.team.members.includes(req.user.id)) {
             return next(new AppError(403, 'you can not access'));
         }
@@ -122,15 +122,9 @@ const updateProject = catchAsync(
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        let allowedFields, archivedMessage;
-
-        if (req.user.role === 'admin') {
-            allowedFields = ['title', 'description', 'status', 'team', 'dueDate'];
-            archivedMessage = 'Project is archived'
-        } else {
-            allowedFields = ['title', 'description', 'status'];
-            archivedMessage = 'Project is not found'
-        }
+        const allowedFields = req.user.role === 'admin'
+            ? ['title', 'description', 'status', 'dueDate']
+            : ['title', 'description', 'status']
 
         const filtered = filterBody(req.body, ...allowedFields)
 
@@ -148,22 +142,37 @@ const updateProject = catchAsync(
             // find team exist or not
             const team = await Teams.findById(filtered.team).select('isActive');
             // Then if team does not exist
-            if (!team || !team.isActive) {
-                return next(new AppError(404, 'Team is not found'));
+            if (!team) return next(new AppError(404, 'Team is not found'));
+
+            // If team is not active
+            if (!team.isActive) {
+                // if logged user is admin
+                if (req.user.role === 'admin') {
+                    return next(new AppError(404, 'Team is not active'))
+                } else {
+                    return next(new AppError(404, 'Team is not found'))
+                }
             }
+
         }
 
         // Find team
         const project = await Projects.findById(req.params.id).populate('team', 'teamLead');
-        if (!project) return next(new AppError(404, 'Team is not found'));
+        if (!project) return next(new AppError(404, 'Project is not found'));
 
         // then if project is archived
-        if (project.status === 'archived') return next(new AppError(404, archivedMessage));
+
+        if (project.status === 'archived' || project.status === 'cancelled') {
+            // if logged use is admin
+            if(req.user.role === 'admin') {
+                return next(new AppError(400, `Project is ${project.status}`));
+            }else {
+                return next(new AppError(404, 'Project is not found')); 
+            }
+        }
 
         // if logged user is not team lead of the team of project
         if (req.user.role === 'team_lead' && project.team.teamLead.toString() !== req.user.id) return next(new AppError(403, 'You can not update this project'));
-
-        console.log(filtered)
 
         const updatedProject = await Projects.findByIdAndUpdate(
             req.params.id,
@@ -190,11 +199,13 @@ const deleteProject = catchAsync(
         const project = await Projects.findById(req.params.id)
         if (!project) return next(new AppError(404, 'project is not found'));
 
-        if (project.status === 'archived') return next(new AppError(400, 'project is already archived'));
+        if (project.status === 'archived' || project.status === 'cancelled') return next(new AppError(400, `project is already ${project.status}`));
 
-        project.status = 'archived';
+        project.status = req.query.force
+            ? "archived"
+            : "cancelled"
+
         await project.save();
-
         res.status(204).send();
     }
 )
