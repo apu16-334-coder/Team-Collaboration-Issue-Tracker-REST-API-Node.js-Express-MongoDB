@@ -27,10 +27,21 @@ const createProject = catchAsync(
         // check if team is here
         if (filtered.team) {
             // find team
-            const team = await Teams.findById(filtered.team).select('isActive');
-            if (!team || !team.isActive) {
-                return next(new AppError(404, 'Team is not found'));
+            const team = await Teams.findById(filtered.team).select('teamLead isActive');
+            if (!team) return next(new AppError(404, 'Team is not found'));
+
+            // If team is not active
+            if (!team.isActive) {
+                // if logged user is admin
+                let errMessage = req.user.role === 'admin'
+                    ? 'Team is not active'
+                    : 'Team is not found';
+                    
+                return next(new AppError(404, errMessage));
             }
+
+            // if team_lead create project for other's team
+            if (req.user.role === 'team_lead' && team.teamLead.toString() !== req.user.id) return next(new AppError(400, 'TeamLead can create project only for his team'));
         }
 
         const project = await Projects.create(filtered);
@@ -82,7 +93,7 @@ const getAllProjects = catchAsync(
 const getProject = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        // Find team
+        // Find project
         const project = await Projects.findById(req.params.id)
             .populate('team', 'title teamLead members');
 
@@ -128,51 +139,32 @@ const updateProject = catchAsync(
 
         const filtered = filterBody(req.body, ...allowedFields)
 
+        console.log(filtered)
+
         if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
 
         // if logged user is team_lead
-        if (req.user.role === 'team_lead' && filtered.status) {
+        if (filtered.status) {
             const allowedStatus = ['planning', 'active', 'on_hold', 'completed']
             // the if status is not allowed
-            if (!allowedStatus.includes(filtered.status)) return next(new AppError(400, `Team_lead of project's team can only set status as ${allowedStatus}`))
-        }
-
-        // check if team is here
-        if (filtered.team) {
-            // find team exist or not
-            const team = await Teams.findById(filtered.team).select('isActive');
-            // Then if team does not exist
-            if (!team) return next(new AppError(404, 'Team is not found'));
-
-            // If team is not active
-            if (!team.isActive) {
-                // if logged user is admin
-                if (req.user.role === 'admin') {
-                    return next(new AppError(404, 'Team is not active'))
-                } else {
-                    return next(new AppError(404, 'Team is not found'))
-                }
-            }
-
+            if (!allowedStatus.includes(filtered.status)) return next(new AppError(400, `Team_lead of project's team can only set status as ${allowedStatus.join(', ')}`))
         }
 
         // Find team
         const project = await Projects.findById(req.params.id).populate('team', 'teamLead');
         if (!project) return next(new AppError(404, 'Project is not found'));
 
-        // then if project is archived
-
+        // then if project is archived or cancelled
         if (project.status === 'archived' || project.status === 'cancelled') {
-            // if logged use is admin
-            if(req.user.role === 'admin') {
-                return next(new AppError(400, `Project is ${project.status}`));
-            }else {
-                return next(new AppError(404, 'Project is not found')); 
-            }
+            let errMessage = req.user.role === 'admin'
+                ? `Project is ${project.status}`
+                : 'Project is not found';
+
+            return next(new AppError(404, errMessage));
         }
 
         // if logged user is not team lead of the team of project
-        if (req.user.role === 'team_lead' && project.team.teamLead.toString() !== req.user.id) return next(new AppError(403, 'You can not update this project'));
+        if (req.user.role === 'team_lead' && project.team.teamLead.toString() !== req.user.id) return next(new AppError(403, 'You can not update this project, only team_lead of this project can'));
 
         const updatedProject = await Projects.findByIdAndUpdate(
             req.params.id,
@@ -202,8 +194,8 @@ const deleteProject = catchAsync(
         if (project.status === 'archived' || project.status === 'cancelled') return next(new AppError(400, `project is already ${project.status}`));
 
         project.status = req.query.force
-            ? "archived"
-            : "cancelled"
+            ? "cancelled"
+            : "archived"
 
         await project.save();
         res.status(204).send();

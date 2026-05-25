@@ -8,7 +8,7 @@ const issueSchema = new mongoose.Schema({
         required: [true, "title is required"],
         trim: true,
         minlength: [3, 'title must be at least 3 characters'],
-        maxlength: [20, 'title must be at most 20 characters']
+        maxlength: [50, 'title must be at most 50 characters']
     },
     description: {
         type: String,
@@ -17,31 +17,37 @@ const issueSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: ['open', 'in_progress', 'done', 'in_review', 'closed', 'cancelled'],
-        default: 'open'
+        default: 'open',
+        index: true
     },
     priority: {
         type: String,
         enum: ['low', 'medium', 'high', 'critical'],
-        default: 'medium'
+        default: 'medium',
+        index: true
     },
     type: {
         type: String,
         enum: ['bug', 'feature', 'task', 'improvement'],
-        default: 'task'
+        default: 'task',
+        index: true
     },
     project: { 
         type: mongoose.Schema.ObjectId, 
         ref: 'Project', 
-        required: true 
+        required: [true, "project is required"],
+        index: true
     },
     assignedTo: { 
         type: mongoose.Schema.ObjectId, 
-        ref: 'User' 
-
+        ref: 'User',
+        default: null,
+        index: true
     },
     createdBy: { 
         type: mongoose.Schema.ObjectId, 
-        ref: 'User', required: true 
+        ref: 'User',
+        index: true
     },
     dueDate: {
         type: Date,

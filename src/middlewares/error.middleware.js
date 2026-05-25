@@ -12,26 +12,24 @@ const globalErrorHandler = (err, req, res, next) => {
     console.error(err.stack);
 
     // Mongoose validation or cast errors
-    if(err.name === "ValidationError") {
+    if (err.name === "ValidationError") {
         err.status = 400;
     }
 
     // Mongoose cast errors
-    if(err.name === "CastError") {
+    if (err.name === "CastError") {
         err.status = 400;
         err.message = "Invalid Id: " + err.message.slice(err.message.search('value'))
         console.log(err)
     }
 
     // MongoDB duplicate key error (unique constraint)
-    if(err.code === 11000) {
-        console.log(err);
-        
+    if (err.code === 11000) {
         if(err.keyValue.title && err.keyValue.team) {
-            err = new AppError(400, `In a same team, same project title can not be there`);
+            err = new AppError(400, `Project with this title already exists in this selected team`);
         }else {
             err = new AppError(400, `${Object.keys(err.keyValue)} is already exist`);
-        }
+        }       
     }
 
     res.status(err.status || 500).json({
@@ -40,4 +38,4 @@ const globalErrorHandler = (err, req, res, next) => {
     })
 }
 
-module.exports = { noRouteFound, globalErrorHandler}
+module.exports = { noRouteFound, globalErrorHandler }

@@ -8,7 +8,7 @@ const projectSchema = new mongoose.Schema({
         required: [true, "title is required"],
         trim: true,
         minlength: [3, 'title must be at least 3 characters'],
-        maxlength: [20, 'title must be at most 20 characters']
+        maxlength: [50, 'title must be at most 50 characters']
     },
     description: {
         type: String,
@@ -40,7 +40,7 @@ const projectSchema = new mongoose.Schema({
     timestamps: true
 });
 
-projectSchema.index({ title: 1, team: 1 });
+projectSchema.index({ title: 1, team: 1 }, { unique: true });
 
 // Transform output for JSON / Object
 // Remove _id and __v, add id string
