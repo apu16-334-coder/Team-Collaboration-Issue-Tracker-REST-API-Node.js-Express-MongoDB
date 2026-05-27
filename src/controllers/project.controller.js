@@ -36,7 +36,7 @@ const createProject = catchAsync(
                 let errMessage = req.user.role === 'admin'
                     ? 'Team is not active'
                     : 'Team is not found';
-                    
+
                 return next(new AppError(404, errMessage));
             }
 
@@ -99,10 +99,13 @@ const getProject = catchAsync(
 
         if (!project) return next(new AppError(404, 'project is not found'));
 
-        // if logged user is not admin
-        if (req.user.role !== 'admin') {
-            // then if project is archived
-            if (project.status === 'archived' || project.status === 'cancelled') return next(new AppError(404, 'Project is not found'));
+        // then if project is archived
+        if (project.status === 'archived' || project.status === 'cancelled') {
+            const errMessage = req.user.role !== 'admin'
+                ? 'project is not found'
+                : `project is ${project.status}`
+
+            return next(new AppError(404, 'Project is not found'));
         }
 
         // if logged user is not team lead of this project team

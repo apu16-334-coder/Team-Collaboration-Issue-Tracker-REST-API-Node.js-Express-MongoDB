@@ -55,9 +55,6 @@ const createIssue = catchAsync(
             }
         }
 
-
-
-
         const issue = await Issues.create(filtered);
 
         res.status(201).json({
@@ -67,7 +64,42 @@ const createIssue = catchAsync(
     }
 )
 
+/**
+ * GetAllProjects
+ * Admin-only: get all the projects
+ * GET /api/v1/projects
+ */
+const getAllIssues = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        const features = new ApiFeatures(Issues.find(), req.query)
+            .filter()
+            .search('title', 'description')
+            .sort()
+            .pagination()
+
+        // execute query 
+        const issues = await features.query.populate([
+            { path: 'project', select: 'title' },
+            { path: 'assignedTo', select: 'name email' }
+        ]);
+
+        // count total without pagination
+        const total = await Issues.countDocuments(features.getQueryObjForCount());
+
+        // Send response meta-data for pagination
+        res.status(200).json({
+            success: true,
+            results: issues.length,
+            total,
+            page: features.page,
+            limit: features.limit,
+            data: issues
+        })
+    }
+)
+
 module.exports = {
     createIssue,
-
+    getAllIssues,
 };

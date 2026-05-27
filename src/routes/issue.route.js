@@ -1,5 +1,6 @@
 const {
     createIssue,
+    getAllIssues,
     
 } = require("../controllers/issue.controller.js");
 
@@ -17,6 +18,7 @@ const router = require("express").Router();
 // GET  /api/v1/issues     → get all issues
 router.route("/")
     .post(createIssue)
+    .get(restrictTo('admin'), getAllIssues)
 
 
 module.exports = router;
