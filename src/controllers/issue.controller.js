@@ -36,10 +36,10 @@ const createIssue = catchAsync(
             if (!project || project.status === 'archived' || project.status === 'cancelled') return next(new AppError(404, 'Project is not found'));
 
             // if logged user is team lead but not of selected project team
-            if (req.user.role === 'team_lead' && project?.team.teamLead.toString() !== req.user.id) return next(new AppError(403, 'Team lead can create issue only for his project'));
+            if (req.user.role === 'team_lead' && project.team.teamLead?.toString() !== req.user.id) return next(new AppError(403, 'Team lead can create issue only for his project'));
 
             // if logged user is member but not of selected project team
-            if (req.user.role === 'member' && !project?.team.members.includes(req.user.id)) {
+            if (req.user.role === 'member' && !project.team.members?.includes(req.user.id)) {
                 return next(new AppError(403, 'Member can create task or bug only for his project'));
             }
 
@@ -99,7 +99,54 @@ const getAllIssues = catchAsync(
     }
 )
 
+/**
+ * getProject
+ * (admin | team_lead of team | member): get a particular project by id
+ * GET /api/v1/projects/:id
+ */
+const getIssue = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        // Find project
+        const issue = await Issues.findById(req.params.id)
+            .populate([
+                { path: 'project', select: 'title', populate: {
+                    path: 'team',
+                    select: 'title teamLead members'
+                }},
+                { path: 'assignedTo', select: 'name email' }
+            ]);
+
+        if (!issue) return next(new AppError(404, 'issue is not found'));
+
+        // then if issue is cancelled
+        if (issue.status === 'cancelled') {
+            const errArray = req.user.role === 'member'
+                ? [404, 'issue is not found']
+                : [400, `issue is ${issue.status}`];
+
+            return next(new AppError(errArray[0], errArray[1]));
+        }
+
+        // if logged user is not team lead of this issue team
+        if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
+            return next(new AppError(403, 'you can not access'));
+        }
+
+        // if logged user is not member of this issue team
+        if (req.user.role === 'member' && !issue.project.team.members.includes(req.user.id)) {
+            return next(new AppError(403, 'you can not access'));
+        }
+
+        res.status(200).json({
+            success: true,
+            data: issue
+        })
+    }
+)
+
 module.exports = {
     createIssue,
     getAllIssues,
+    getIssue,
 };

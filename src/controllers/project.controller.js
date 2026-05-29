@@ -33,15 +33,15 @@ const createProject = catchAsync(
             // If team is not active
             if (!team.isActive) {
                 // if logged user is admin
-                let errMessage = req.user.role === 'admin'
-                    ? 'Team is not active'
-                    : 'Team is not found';
+                const errAraay = req.user.role === 'admin'
+                    ? [400, 'Team is not active']
+                    : [404, 'Team is not found'];
 
-                return next(new AppError(404, errMessage));
+                return next(new AppError(errAraay[0], errAraay[1]));
             }
 
             // if team_lead create project for other's team
-            if (req.user.role === 'team_lead' && team.teamLead.toString() !== req.user.id) return next(new AppError(400, 'TeamLead can create project only for his team'));
+            if (req.user.role === 'team_lead' && team.teamLead.toString() !== req.user.id) return next(new AppError(400, 'TeamLead can create project only for his teams'));
         }
 
         const project = await Projects.create(filtered);
@@ -101,11 +101,11 @@ const getProject = catchAsync(
 
         // then if project is archived
         if (project.status === 'archived' || project.status === 'cancelled') {
-            const errMessage = req.user.role !== 'admin'
-                ? 'project is not found'
-                : `project is ${project.status}`
+            const errArray = req.user.role !== 'admin'
+                ? [404, 'project is not found']
+                : [400, `project is ${project.status}`];
 
-            return next(new AppError(404, 'Project is not found'));
+            return next(new AppError(errArray[0], errArray[1]));
         }
 
         // if logged user is not team lead of this project team
@@ -159,11 +159,11 @@ const updateProject = catchAsync(
 
         // then if project is archived or cancelled
         if (project.status === 'archived' || project.status === 'cancelled') {
-            let errMessage = req.user.role === 'admin'
-                ? `Project is ${project.status}`
-                : 'Project is not found';
+            const errArray = req.user.role !== 'admin'
+                ? [404, 'project is not found']
+                : [400, `project is ${project.status}`];
 
-            return next(new AppError(404, errMessage));
+            return next(new AppError(errArray[0], errArray[1]));
         }
 
         // if logged user is not team lead of the team of project

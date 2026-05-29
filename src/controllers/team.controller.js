@@ -17,7 +17,7 @@ const mongoose = require('mongoose');
  */
 const createTeam = catchAsync(
     /** @type {RequestHandler} */
-    async (req, res, next) => {   
+    async (req, res, next) => {
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
@@ -27,9 +27,11 @@ const createTeam = catchAsync(
         console.log(await Users.findById(filtered.teamLead).select('role'))
 
         if (filtered.teamLead) {
-            if ((await Users.findById(filtered.teamLead).select('role'))?.role !== 'team_lead') {
-                return next(new AppError(400, 'Only users with team_lead role can be assigned as team lead'))
-            }
+            // Find teamLead user
+            const lead = await Users.findById(filtered.teamLead).select('isActive role')
+            if (!lead) return next(new AppError(404, 'Team_lead is not found'));
+            if (lead.role !== 'team_lead') return (400, 'Only user with role team_lead can assign as a lead in a team');
+            if (!lead.isActive) return next(new AppError(400, 'Team_lead is not active'));
         }
 
         const team = await Teams.create(filtered);
@@ -127,10 +129,14 @@ const getTeam = catchAsync(
 
         if (!team) return next(new AppError(404, 'Team is not found'));
 
-        // if logged user is not admin
-        if (req.user.role !== 'admin') {
-            // then if team is not active
-            if (!team.isActive) return next(new AppError(404, 'Team is not found'));
+        // If team is not active
+        if (!team.isActive) {
+            // if logged user is admin
+            const errAraay = req.user.role === 'admin'
+                ? [400, 'Team is not active']
+                : [404, 'Team is not found'];
+
+            return next(new AppError(errAraay[0], errAraay[1]));
         }
 
         // if logged user is not team lead of the team
@@ -166,9 +172,11 @@ const updateTeam = catchAsync(
         if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
 
         if (filtered.teamLead) {
-            if ((await Users.findById(teamLead).select('role')).role !== 'team_lead') {
-                return next(new AppError(400, 'Only users with team_lead role can be assigned as team lead'))
-            }
+            // Find teamLead user
+            const lead = await Users.findById(filtered.teamLead).select('isActive role')
+            if (!lead) return next(new AppError(404, 'Team_lead is not found'));
+            if (lead.role !== 'team_lead') return (400, 'Only user with role team_lead can assign as a lead in a team');
+            if (!lead.isActive) return next(new AppError(400, 'Team_lead is not active'));
         }
 
         // Find team
@@ -352,7 +360,6 @@ const removeTeamMember = catchAsync(
 const getTeamProjects = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-
         res.send("Getting members in a particulat team by id....")
     }
 )

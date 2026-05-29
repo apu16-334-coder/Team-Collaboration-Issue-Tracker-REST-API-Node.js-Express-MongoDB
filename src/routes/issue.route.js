@@ -1,6 +1,7 @@
 const {
     createIssue,
     getAllIssues,
+    getIssue,
     
 } = require("../controllers/issue.controller.js");
 
@@ -19,6 +20,11 @@ const router = require("express").Router();
 router.route("/")
     .post(createIssue)
     .get(restrictTo('admin'), getAllIssues)
+
+// admin/ team_lead/ member: get a particular issue by id;
+// GET /api.v1/issues/:id → get a project
+router.route("/:id")
+    .get(getIssue)
 
 
 module.exports = router;
