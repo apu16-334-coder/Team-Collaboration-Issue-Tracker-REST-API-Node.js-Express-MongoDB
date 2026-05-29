@@ -22,7 +22,7 @@ const createProject = catchAsync(
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        const filtered = filterBody(req.body, 'title', 'description', 'status', 'team', 'dueDate')
+        const filtered = filterBody(req.body, 'title', 'description', 'team', 'dueDate')
 
         // check if team is here
         if (filtered.team) {
@@ -133,26 +133,6 @@ const getProject = catchAsync(
 const updateProject = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        // If request body is invalid
-        if (!req.body) return next(new AppError(400, 'Not valid request body'));
-
-        const allowedFields = req.user.role === 'admin'
-            ? ['title', 'description', 'status', 'dueDate']
-            : ['title', 'description', 'status']
-
-        const filtered = filterBody(req.body, ...allowedFields)
-
-        console.log(filtered)
-
-        if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
-
-        // if logged user is team_lead
-        if (filtered.status) {
-            const allowedStatus = ['planning', 'active', 'on_hold', 'completed']
-            // the if status is not allowed
-            if (!allowedStatus.includes(filtered.status)) return next(new AppError(400, `Team_lead of project's team can only set status as ${allowedStatus.join(', ')}`))
-        }
-
         // Find team
         const project = await Projects.findById(req.params.id).populate('team', 'teamLead');
         if (!project) return next(new AppError(404, 'Project is not found'));
@@ -167,7 +147,47 @@ const updateProject = catchAsync(
         }
 
         // if logged user is not team lead of the team of project
-        if (req.user.role === 'team_lead' && project.team.teamLead.toString() !== req.user.id) return next(new AppError(403, 'You can not update this project, only team_lead of this project can'));
+        if (req.user.role === 'team_lead' && project.team.teamLead.toString() !== req.user.id) return next(new AppError(403, 'You can not update this project'));
+        
+        // If request body is invalid
+        if (!req.body) return next(new AppError(400, 'Not valid request body'));
+
+        const allowedFields = req.user.role === 'admin'
+            ? ['title', 'description', 'status', 'team', 'dueDate']
+            : ['title', 'description', 'status']
+
+        const filtered = filterBody(req.body, ...allowedFields)
+
+        console.log(filtered)
+
+        if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
+
+        // check if team is here
+        if (filtered.team) {
+            // find team
+            const team = await Teams.findById(filtered.team).select('teamLead isActive');
+            if (!team) return next(new AppError(404, 'Team is not found'));
+
+            // If team is not active
+            if (!team.isActive) {
+                // if logged user is admin
+                const errAraay = req.user.role === 'admin'
+                    ? [400, 'Team is not active']
+                    : [404, 'Team is not found'];
+
+                return next(new AppError(errAraay[0], errAraay[1]));
+            }
+
+            // if team_lead create project for other's team
+            if (req.user.role === 'team_lead' && team.teamLead.toString() !== req.user.id) return next(new AppError(400, 'TeamLead can create project only for his teams'));
+        }
+
+        // if status is here
+        if (filtered.status) {
+            const allowedStatus = ['planning', 'active', 'on_hold', 'completed']
+            // the if status is not allowed
+            if (!allowedStatus.includes(filtered.status)) return next(new AppError(400, `Only status can set as ${allowedStatus.join(', ')}`))
+        }
 
         const updatedProject = await Projects.findByIdAndUpdate(
             req.params.id,

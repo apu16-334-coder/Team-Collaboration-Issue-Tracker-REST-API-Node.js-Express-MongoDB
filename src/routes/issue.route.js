@@ -2,6 +2,7 @@ const {
     createIssue,
     getAllIssues,
     getIssue,
+    updateIssue,
     
 } = require("../controllers/issue.controller.js");
 
@@ -22,9 +23,12 @@ router.route("/")
     .get(restrictTo('admin'), getAllIssues)
 
 // admin/ team_lead/ member: get a particular issue by id;
+// admin/ team_lead/ member: update a particular issue by id;
 // GET /api.v1/issues/:id → get a project
+// Patch /api.v1/issues/:id → get a project
 router.route("/:id")
     .get(getIssue)
+    .patch(updateIssue);
 
 
 module.exports = router;

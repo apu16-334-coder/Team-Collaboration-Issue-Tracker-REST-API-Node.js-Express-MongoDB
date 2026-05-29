@@ -23,14 +23,12 @@ const createIssue = catchAsync(
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        const filtered = filterBody(req.body, 'title', 'description', 'status', 'priority', 'type', 'project', 'assignedTo')
-
-        let project;
+        const filtered = filterBody(req.body, 'title', 'description', 'priority', 'type', 'project', 'assignedTo');
 
         // check if project is here
         if (filtered.project) {
             // Find project
-            project = await Projects.findById(filtered.project)
+            const project = await Projects.findById(filtered.project)
                 .populate('team', 'title teamLead members');
 
             if (!project || project.status === 'archived' || project.status === 'cancelled') return next(new AppError(404, 'Project is not found'));
@@ -40,7 +38,7 @@ const createIssue = catchAsync(
 
             // if logged user is member but not of selected project team
             if (req.user.role === 'member' && !project.team.members?.includes(req.user.id)) {
-                return next(new AppError(403, 'Member can create task or bug only for his project'));
+                return next(new AppError(403, 'Member can create issue only for his project'));
             }
 
             // if assigned to is there
@@ -54,6 +52,8 @@ const createIssue = catchAsync(
                 }
             }
         }
+
+        filtered.createdBy = req.user.id;
 
         const issue = await Issues.create(filtered);
 
@@ -107,13 +107,15 @@ const getAllIssues = catchAsync(
 const getIssue = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        // Find project
+        // Find issue
         const issue = await Issues.findById(req.params.id)
             .populate([
-                { path: 'project', select: 'title', populate: {
-                    path: 'team',
-                    select: 'title teamLead members'
-                }},
+                {
+                    path: 'project', select: 'title', populate: {
+                        path: 'team',
+                        select: 'title teamLead members'
+                    }
+                },
                 { path: 'assignedTo', select: 'name email' }
             ]);
 
@@ -128,14 +130,14 @@ const getIssue = catchAsync(
             return next(new AppError(errArray[0], errArray[1]));
         }
 
-        // if logged user is not team lead of this issue team
+        // if logged user is not team lead of this issue project team
         if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
-            return next(new AppError(403, 'you can not access'));
+            return next(new AppError(403, 'you can not access this'));
         }
 
-        // if logged user is not member of this issue team
-        if (req.user.role === 'member' && !issue.project.team.members.includes(req.user.id)) {
-            return next(new AppError(403, 'you can not access'));
+        // if logged user is not assigned to this issue
+        if (req.user.role === 'member' && issue.assignedTo.id.toString() !== req.user.id) {
+            return next(new AppError(403, 'you can not access this'));
         }
 
         res.status(200).json({
@@ -145,8 +147,119 @@ const getIssue = catchAsync(
     }
 )
 
+/**
+ * updateIssue
+ * (admin, team_lead, member) : update a particular issue by id.(assignedTo member can update status only)
+ * PATCH /api/v1/teams/:id
+ */
+const updateIssue = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        // Find issue
+        const issue = await Issues.findById(req.params.id)
+            .populate([
+                {
+                    path: 'project', select: 'title team', populate: {
+                        path: 'team',
+                        select: 'title teamLead members'
+                    }
+                },
+                { path: 'assignedTo', select: 'name email' }
+            ]);
+
+        if (!issue) return next(new AppError(404, 'issue is not found'));
+
+        // then if issue is cancelled
+        if (issue.status === 'cancelled') {
+            const errArray = req.user.role === 'member'
+                ? [404, 'issue is not found']
+                : [400, `issue is ${issue.status}`];
+
+            return next(new AppError(errArray[0], errArray[1]));
+        }
+
+        // if logged user is not team lead of this issue project team
+        if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
+            return next(new AppError(403, 'you can not edit this'));
+        }
+
+        // if logged user is not assigned to this issue
+        if (req.user.role === 'member' && issue.assignedTo.toString() !== req.user.id) {
+            return next(new AppError(403, 'you can not edit this'));
+        }
+
+        // If request body is invalid
+        if (!req.body) return next(new AppError(400, 'Not valid request body'));
+
+        // define allowed fields
+        let allowedFields = [];
+
+        // if user is not member
+        if (req.user.role !== 'member') {
+            allowedFields = ['title', 'description', 'status', 'priority', 'type', 'project', 'assignedTo'];
+        } else if (req.user.id === issue.createdBy.toString()) {
+            allowedFields = ['title', 'description', 'status', 'priority', 'type', 'project'];
+        } else if (req.user.id === issue.assignedTo.toString()) {
+            allowedFields = ['status']
+        }
+
+        const filtered = filterBody(req.body, ...allowedFields)
+
+        if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
+
+        // check if project is here
+        if (filtered.project) {
+            // Find project
+            const project = await Projects.findById(filtered.project)
+                .populate('team', 'title teamLead members');
+
+            if (!project || project.status === 'archived' || project.status === 'cancelled') return next(new AppError(404, 'Project is not found'));
+
+            // if logged user is team lead but not of selected project team
+            if (req.user.role === 'team_lead' && project.team.teamLead?.toString() !== req.user.id) return next(new AppError(403, 'Team lead can add issue only to his projects'));
+
+            // if logged user is member but not of selected project team
+            if (req.user.role === 'member' && !project.team.members?.includes(req.user.id)) {
+                return next(new AppError(403, 'Member can add issue only those projects he or she belongs'));
+            }
+
+            // if assigned to is there
+            if (filtered.assignedTo) {
+                // Team lead can assign only the team member of selected project
+                if (!project?.team.members.includes(filtered.assignedTo)) {
+                    return next(new AppError(400, 'Only team member of selected project can assign for issue'));
+                }
+            }
+        }
+
+        // if status is there 
+        if (filtered.status) {
+            const allowedStatus = req.user.role !== 'member'
+                ? ['open', 'in_progress', 'done', 'in_review', 'closed']
+                : ['open', 'in_progress', 'done'];
+            // the if status is not allowed
+            if (!allowedStatus.includes(filtered.status)) return next(new AppError(400, `${req.user.role} can only set status as ${allowedStatus.join(', ')}`))
+        }
+
+        const updatedIssue = await Issues.findByIdAndUpdate(
+            req.params.id,
+            filtered,
+            { returnDocument: 'after', runValidators: true }
+        ).populate([
+            { path: 'project', select: 'title team' },
+            { path: 'assignedTo', select: 'name email' }
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: updatedIssue
+        })
+    }
+)
+
 module.exports = {
     createIssue,
     getAllIssues,
     getIssue,
+    updateIssue,
 };

@@ -20,7 +20,7 @@ const projectSchema = new mongoose.Schema({
         default: 'planning',
         index: true
     },
-    team: { 
+    team: {
         type: mongoose.Schema.ObjectId, 
         ref: 'Team', 
         required: [true, 'Team is required'],
