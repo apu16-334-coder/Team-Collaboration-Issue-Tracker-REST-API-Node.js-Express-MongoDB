@@ -257,9 +257,44 @@ const updateIssue = catchAsync(
     }
 )
 
+/**
+ * deleteIssue
+ * admin/ team_lead: get a particular issue by id
+ * DELETE /api/v1/teams/:id
+ */
+const deleteIssue = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        // Find Team
+        const issue = await Issues.findById(req.params.id)
+            .populate(
+                {
+                    path: 'project', select: 'title team', populate: {
+                        path: 'team',
+                        select: 'title teamLead members'
+                    }
+                }
+            );
+        if (!issue) return next(new AppError(404, 'issue is not found'));
+
+        if (issue.status === 'cancelled') return next(new AppError(400, `issue is already cancelled`));
+
+        // if logged user is not team lead of this issue project team
+        if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
+            return next(new AppError(403, 'you can not delete this'));
+        }
+
+        issue.status = 'cancelled';
+
+        await issue.save();
+        res.status(204).send();
+    }
+)
+
 module.exports = {
     createIssue,
     getAllIssues,
     getIssue,
     updateIssue,
+    deleteIssue,
 };

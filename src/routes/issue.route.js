@@ -3,6 +3,7 @@ const {
     getAllIssues,
     getIssue,
     updateIssue,
+    deleteIssue,
     
 } = require("../controllers/issue.controller.js");
 
@@ -28,7 +29,8 @@ router.route("/")
 // Patch /api.v1/issues/:id → get a project
 router.route("/:id")
     .get(getIssue)
-    .patch(updateIssue);
+    .patch(updateIssue)
+    .delete(restrictTo('admin', 'team_lead'), deleteIssue)
 
 
 module.exports = router;

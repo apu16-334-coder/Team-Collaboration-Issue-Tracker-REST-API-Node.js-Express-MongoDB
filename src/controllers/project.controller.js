@@ -203,9 +203,9 @@ const updateProject = catchAsync(
 )
 
 /**
- * DeleteTeam
- * admin only: get a particular team by id
- * DELETE /api/v1/teams/:id
+ * deleteProject
+ * admin only: get a particular project by id
+ * DELETE /api/v1/projects/:id
  */
 const deleteProject = catchAsync(
     /** @type {RequestHandler} */
@@ -216,7 +216,9 @@ const deleteProject = catchAsync(
 
         if (project.status === 'archived' || project.status === 'cancelled') return next(new AppError(400, `project is already ${project.status}`));
 
-        project.status = req.query.force
+        if(project.status !== 'completed' && !req.query.force) return next(new AppError(400, 'Project is not complete yet'));
+
+        project.status = req.query.force && project.status !== 'completed'
             ? "cancelled"
             : "archived"
 
