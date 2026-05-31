@@ -2,10 +2,10 @@ const router = require("express").Router();
 
 const { protect, restrictTo } = require("../middlewares/auth.middleware.js");
 
-// const commentRouter = require('./comment.route.js') // ← import
+const commentRouter = require('./comment.route.js') // ← import
 
-// // Mount comment router on issue router
-// router.use('/:id/comments', commentRouter) // ← this is the connection
+// Mount comment router on issue router
+router.use('/:id/comments', commentRouter) // ← this is the connection
 
 const {
     createIssue,
