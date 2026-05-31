@@ -62,8 +62,6 @@ const createComments = catchAsync(
             }
         }
 
-        
-
         const comment = await Comments.create(filtered);
 
         res.status(201).json({
@@ -73,7 +71,55 @@ const createComments = catchAsync(
     }
 )
 
+/**
+ * getIssueComments
+ * Admin-only: get all the comments of a Issue
+ * GET /api/v1/issues/:id/comments
+ */
+const getIssueComments = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        // find issue
+        const issue = await Issues.findById(req.params.id).select('status');
+
+        if(!issue) return next(new AppError(404, 'Issue is not found'));
+
+        if(issue.status === 'cancelled') {
+            const errArray = req.user.role === 'member' 
+                ? [404, 'Issue is not found']
+                : [400, `issue is ${issue.status}`];
+
+            return next(new AppError(errArray[0], errArray[1]));
+        }
+
+        const features = new ApiFeatures(Comments.find({ issue: req.params.id }), req.query)
+            .filter()
+            .search('text')
+            .sort()
+            .pagination()
+
+        // execute query 
+        const comments = await features.query.populate([
+            { path: 'issue', select: 'title' },
+            { path: 'author', select: 'name email' }
+        ]);
+
+        // count total without pagination
+        const total = await Comments.countDocuments(features.getQueryObjForCount());
+
+        // Send response meta-data for pagination
+        res.status(200).json({
+            success: true,
+            results: comments.length,
+            total,
+            page: features.page,
+            limit: features.limit,
+            data: comments
+        })
+    }
+)
+
 module.exports = {
     createComments,
-
+    getIssueComments,
 };

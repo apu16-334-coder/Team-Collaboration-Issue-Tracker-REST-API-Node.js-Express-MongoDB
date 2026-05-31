@@ -4,12 +4,16 @@ const bcrypt = require('bcrypt');
 // User Schema
 const commentSchema = new mongoose.Schema({
     issue: { 
-        type: mongoose.Schema.Types.ObjectId, ref: 'Issue', 
-        required: true 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Issue', 
+        required: true,
+        index: true
     },
     author: { 
-        type: mongoose.Schema.Types.ObjectId, ref: 'User', 
-        required: true 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User', 
+        required: true,
+        index: true
     },
     text: { 
         type: String, 
@@ -18,7 +22,8 @@ const commentSchema = new mongoose.Schema({
     },
     isEdited: { 
         type: Boolean, 
-        default: false 
+        default: false,
+        index: true
     },
 }, {
     timestamps: true
