@@ -207,20 +207,26 @@ const deleteUser = catchAsync(
         if (!user) return next(new AppError(404, 'User is not found'));
         if (!user.isActive) return next(new AppError(400, 'User is already deactivated'));
 
+        // If target user is teamLead
         if (user.role === 'team_lead') {
+            // get all active teams of this team_lead
             const activeTeams = await Teams.find({ teamLead: user.id, isActive: true });
 
+            // If team_lead has any teams then give feedback to reassign them first
             if (activeTeams.length > 0) {
                 return next(new AppError(400, `Team_lead has these ${activeTeams.map(t => t.title)} active teams, Reassign them first`));
             }
         }
 
+        // If taget user is member
         if (user.role === 'member') {
+            // remove from any teams he or she belongs
             await Teams.updateMany(
                 { members: user.id },
                 { $pull: { members: user.id } }
             );
 
+            // remove from any imcomplete issue he or she assigned
             await Issues.updateMany(
                 { assignedTo: user.id, status: { $nin: ['closed', 'cancelled'] } },
                 { assignedTo: null }
@@ -265,7 +271,7 @@ const userReactivate = catchAsync(
 
 /**
  * changeUserRole
- * Admin-only: reset a user's password
+ * Admin-only: change user role
  * PATCH /api/v1/users/:id/change-role
  */
 
@@ -288,6 +294,32 @@ const changeUserRole = catchAsync(
         const user = await Users.findById(req.params.id)
         if (!user) return next(new AppError(404, 'User is not found'));
         if (!user.isActive) return next(new AppError(400, 'User is not active'));
+
+        // If target user is teamLead
+        if (user.role === 'team_lead') {
+            // get all active teams of this team_lead
+            const activeTeams = await Teams.find({ teamLead: user.id, isActive: true });
+
+            // If team_lead has any teams then give feedback to reassign them first
+            if (activeTeams.length > 0) {
+                return next(new AppError(400, `Team_lead has these ${activeTeams.map(t => t.title)} active teams, Reassign them first`));
+            }
+        }
+
+        // If taget user is member
+        if (user.role === 'member') {
+            // remove from any teams he or she belongs
+            await Teams.updateMany(
+                { members: user.id },
+                { $pull: { members: user.id } }
+            );
+
+            // remove from any imcomplete issue he or she assigned
+            await Issues.updateMany(
+                { assignedTo: user.id, status: { $nin: ['closed', 'cancelled'] } },
+                { assignedTo: null }
+            )
+        }
 
         user.role = role;
         await user.save()
