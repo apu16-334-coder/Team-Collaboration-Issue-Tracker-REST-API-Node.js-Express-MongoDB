@@ -1,5 +1,6 @@
 const Users = require('../models/user.model.js')
 const Teams = require('../models/team.model.js')
+const Issues = require('../models/issue.model.js')
 const catchAsync = require('../utils/catchAsync.js')
 const AppError = require("../utils/AppError.js");
 const ApiFeatures = require("../utils/apiFeatures.js");
@@ -18,11 +19,11 @@ const createUser = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
         // If request body is invalid
-        if(!req.body) return next(new AppError(400, 'Not valid request body'));
+        if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
         // Filtered unwanted fields
         const filtered = filterBody(req.body, 'name', 'email', 'password', 'role', 'isActive')
-        
+
         // execute create user mongoose query
         const user = await Users.create(filtered);
 
@@ -103,11 +104,11 @@ const updateMe = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
         // If request body is invalid
-        if(!req.body) return next(new AppError(400, 'Not valid request body'));
+        if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
         const filtered = filterBody(req.body, 'name', 'email');
 
-        if(Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
+        if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
 
         const user = await Users.findByIdAndUpdate(
             req.user.id,
@@ -133,14 +134,14 @@ const getUser = catchAsync(
         // Find user
         const user = await Users.findById(req.params.id)
         if (!user) return next(new AppError(404, "User is not found")); // if user not found
-        
+
         // If logged user is a team leader
-        if(req.user.role === 'team_lead'){
+        if (req.user.role === 'team_lead') {
             // If specific user is not active
-            if(!user.isActive) return next(new AppError(404, "User is not found"));
+            if (!user.isActive) return next(new AppError(404, "User is not found"));
 
             // If specific user not a member of his or her teams
-            if(!await Teams.exists({teamLead: req.user.id, members: req.params.id})) return next(new AppError(403, 'Team Lead can only get his or her teams members'));
+            if (!await Teams.exists({ teamLead: req.user.id, members: req.params.id })) return next(new AppError(403, 'Team Lead can only get his or her teams members'));
         }
 
         res.status(200).json({
@@ -159,11 +160,11 @@ const updateUser = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
         // If request body is invalid
-        if(!req.body) return next(new AppError(400, 'Not valid request body'));
+        if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
         const filtered = filterBody(req.body, 'name', 'email');
 
-        if(Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
+        if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
 
         // Prevent self update through this endpoint
         if (req.user.id === req.params.id) {
@@ -206,6 +207,26 @@ const deleteUser = catchAsync(
         if (!user) return next(new AppError(404, 'User is not found'));
         if (!user.isActive) return next(new AppError(400, 'User is already deactivated'));
 
+        if (user.role === 'team_lead') {
+            const activeTeams = await Teams.find({ teamLead: user.id, isActive: true });
+
+            if (activeTeams.length > 0) {
+                return next(new AppError(400, `Team_lead has these ${activeTeams.map(t => t.title)} active teams, Reassign them first`));
+            }
+        }
+
+        if (user.role === 'member') {
+            await Teams.updateMany(
+                { members: user.id },
+                { $pull: { members: user.id } }
+            );
+
+            await Issues.updateMany(
+                { assignedTo: user.id, status: { $nin: ['closed', 'cancelled'] } },
+                { assignedTo: null }
+            )
+        }
+
         user.isActive = false;
         await user.save();
         res.status(204).send()
@@ -228,12 +249,12 @@ const userReactivate = catchAsync(
 
         // find user
         const user = await Users.findById(req.params.id)
-        if(!user) return next(new AppError(404, 'User is not found'));
-        if(user.isActive) return next(new AppError(400, 'User is already activate'));
+        if (!user) return next(new AppError(404, 'User is not found'));
+        if (user.isActive) return next(new AppError(400, 'User is already activate'));
 
         user.isActive = true;
         await user.save();
-        
+
         res.status(200).json({
             success: true,
             data: user
@@ -252,11 +273,11 @@ const changeUserRole = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
         // If request body is invalid
-        if(!req.body) return next(new AppError(400, 'Not valid request body'));
+        if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
         const { role } = req.body
 
-        if(!role) return next(new AppError(400, 'role is required'));
+        if (!role) return next(new AppError(400, 'role is required'));
 
         // Prevent self-role change through this endpoint
         if (req.user.id === req.params.id) {
@@ -287,7 +308,7 @@ const resetUserPassword = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
         // If request body is invalid
-        if(!req.body) return next(new AppError(400, 'Not valid request body'));
+        if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
         const { password } = req.body;
 
