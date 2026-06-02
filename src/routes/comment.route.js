@@ -6,6 +6,7 @@ const { protect, restrictTo } = require("../middlewares/auth.middleware.js");
 const {
     createComments,
     getIssueComments,
+    updateComment,
     
 } = require("../controllers/comment.controller.js");
 
@@ -21,7 +22,12 @@ router.route("/")
     .post(createComments)
     .get(getIssueComments)
 
-
+// Author only: update a comment by it is id
+// Author/ team_lead/ admin: delete a comment by it is id
+// PATCH /api/v1/issues/:id/comments    →  Update comment
+// DELETE /api/v1/issues/:id/comments    →  delete comment
+router.route("/:commentId")
+    .patch(updateComment)
 
 
 module.exports = router;

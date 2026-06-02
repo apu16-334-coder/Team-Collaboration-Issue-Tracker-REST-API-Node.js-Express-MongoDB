@@ -31,14 +31,15 @@ const createComments = catchAsync(
         filtered.issue = req.params.id;
 
         if (filtered.issue) {
-            const issue = await Issues.findById(filtered.issue).populate(
-                {
-                    path: 'project', select: 'title', populate: {
+            const issue = await Issues.findById(filtered.issue)
+                .populate({
+                    path: 'project',
+                    select: 'title',
+                    populate: {
                         path: 'team',
                         select: 'title teamLead members'
                     }
-                }
-            )
+                })
 
             if (!issue) return next(new AppError(404, 'issue is not found'));
 
@@ -57,7 +58,7 @@ const createComments = catchAsync(
             }
 
             // if logged user is not member of this issue project team
-            if (req.user.role === 'member' && !issue.project.team.members.includes(req.user.id) ) {
+            if (req.user.role === 'member' && !issue.project.team.members.includes(req.user.id)) {
                 return next(new AppError(403, 'you can not create this'));
             }
         }
@@ -80,16 +81,35 @@ const getIssueComments = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
         // find issue
-        const issue = await Issues.findById(req.params.id).select('status');
+        const issue = await Issues.findById(req.params.id)
+            .populate({
+                path: 'project',
+                select: 'title',
+                populate: {
+                    path: 'team',
+                    select: 'title teamLead members'
+                }
+            })
 
-        if(!issue) return next(new AppError(404, 'Issue is not found'));
+        if (!issue) return next(new AppError(404, 'issue is not found'));
 
-        if(issue.status === 'cancelled') {
-            const errArray = req.user.role === 'member' 
-                ? [404, 'Issue is not found']
+        // then if issue is cancelled
+        if (issue.status === 'cancelled') {
+            const errArray = req.user.role === 'member'
+                ? [404, 'issue is not found']
                 : [400, `issue is ${issue.status}`];
 
             return next(new AppError(errArray[0], errArray[1]));
+        }
+
+        // if logged user is not team lead of this issue project team
+        if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
+            return next(new AppError(403, 'you can not access this'));
+        }
+
+        // if logged user is not member of this issue project team
+        if (req.user.role === 'member' && !issue.project.team.members.includes(req.user.id)) {
+            return next(new AppError(403, 'you can not access this'));
         }
 
         const features = new ApiFeatures(Comments.find({ issue: req.params.id }), req.query)
@@ -119,7 +139,45 @@ const getIssueComments = catchAsync(
     }
 )
 
+/**
+ * updateComment
+ * author only : update a particular comment by id.
+ * PATCH /api/v1/issues/:id/comments/:commentId
+ */
+const updateComment = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        // Find comment
+        const comment = await Comments.findById(req.params.commentId);
+
+        if(!comment) return next(new AppError(404, 'comment is not found'));
+
+        if(comment.author.toString() !== req.user.id) return next(new AppError(403, 'Only author of comment can edit'));
+
+        // If request body is invalid
+        if (!req.body) return next(new AppError(400, 'Not valid request body'));
+
+        if (!req.body.text) return next(new AppError(400, "No valid fields to update"));
+
+        const updatedComment = await Comments.findByIdAndUpdate(
+            req.params.commentId,
+            { text: req.body.text },
+            { returnDocument: 'after', runValidators: true }
+        ).populate([
+            { path: 'issue', select: 'title' },
+            { path: 'author', select: 'name email' }
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: updatedComment
+        })
+    }
+)
+
 module.exports = {
     createComments,
     getIssueComments,
+    updateComment,
+
 };
