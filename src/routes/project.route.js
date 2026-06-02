@@ -16,7 +16,7 @@ const router = require("express").Router();
 
 // Admin, team_lead: Create new project
 // Admin: get all projects
-// POST /api/v1/projects      → create team
+// POST /api/v1/projects      → create project
 // GET  /api/v1/projects     → get all projects
 router.route("/")
     .post(restrictTo('admin', 'team_lead'), createProject)

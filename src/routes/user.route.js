@@ -31,10 +31,10 @@ router.route('/')
 // PATCH /api/v1/users/me  → update own profile
 router.route('/me')
     .get(getMe)
-    .patch(restrictTo('admin', 'team_lead'), updateMe)
+    .patch(updateMe)
 
 // Admin-only: Get/ update/ delete specific user by ID
-// GET    /api/v1/users/:id   → get user by ID
+// GET    /api/v1/users/:id   → get user by ID(team_lead can only get the members of his or her teams)
 // PATCH  /api/v1/users/:id   → update user by ID
 // DELETE /api/v1/users/:id   → delete user by ID
 router.route("/:id")

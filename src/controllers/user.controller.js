@@ -1,4 +1,5 @@
 const Users = require('../models/user.model.js')
+const Teams = require('../models/team.model.js')
 const catchAsync = require('../utils/catchAsync.js')
 const AppError = require("../utils/AppError.js");
 const ApiFeatures = require("../utils/apiFeatures.js");
@@ -19,10 +20,13 @@ const createUser = catchAsync(
         // If request body is invalid
         if(!req.body) return next(new AppError(400, 'Not valid request body'));
 
+        // Filtered unwanted fields
         const filtered = filterBody(req.body, 'name', 'email', 'password', 'role', 'isActive')
-
+        
+        // execute create user mongoose query
         const user = await Users.create(filtered);
 
+        // send response with user data
         res.status(201).json({
             success: true,
             data: {
@@ -77,6 +81,7 @@ const getAllUsers = catchAsync(
 const getMe = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
+        // send response with user data
         res.status(200).json({
             success: true,
             data: {
@@ -125,14 +130,17 @@ const updateMe = catchAsync(
 const getUser = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
+        // Find user
         const user = await Users.findById(req.params.id)
+        if (!user) return next(new AppError(404, "User is not found")); // if user not found
+        
+        // If logged user is a team leader
+        if(req.user.role === 'team_lead'){
+            // If specific user is not active
+            if(!user.isActive) return next(new AppError(404, "User is not found"));
 
-        if (!user) {
-            return next(new AppError(404, "User is not found"));
-        }
-
-        if (req.user.role !== 'admin' && !user.isActive) {
-            return next(new AppError(404, "User is not found"));
+            // If specific user not a member of his or her teams
+            if(!await Teams.exists({teamLead: req.user.id, members: req.params.id})) return next(new AppError(403, 'Team Lead can only get his or her teams members'));
         }
 
         res.status(200).json({

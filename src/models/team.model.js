@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
 
 const teamSchema = new mongoose.Schema({
     title: {
@@ -34,8 +33,6 @@ const teamSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
-
-
 
 // Transform output for JSON / Object
 // Remove _id and __v, add id string
