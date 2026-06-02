@@ -40,7 +40,11 @@ const projectSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// Unique compound index for title and team
 projectSchema.index({ title: 1, team: 1 }, { unique: true });
+
+// compund index for team and status
+projectSchema.index({ team: 1, status: 1 });
 
 // Transform output for JSON / Object
 // Remove _id and __v, add id string

@@ -30,8 +30,9 @@ router.route("/")
 // GET /api.v1/teams/my → get teams of team_lead
 router.get('/my', restrictTo('team_lead'), getMyTeams);
 
-// admin/ team_lead/ member: get a particular team by id;
-// only admin: update or delete a team by id
+// (admin | team_lead of team | members of team): get a particular team by id
+// admin only: update a particular team title/ description/ team_lead by id
+// only admin: delete a team by id
 // GET /api.v1/teams/:id → get a team
 // PATCH /api.v1/teams/:id → update a team
 // DELETE /api.v1/teams/:id → delete a team

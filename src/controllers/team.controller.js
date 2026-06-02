@@ -1,4 +1,5 @@
 const Teams = require("../models/team.model.js")
+const Projects = require("../models/project.model.js")
 const Users = require("../models/user.model.js")
 const catchAsync = require('../utils/catchAsync.js')
 const AppError = require("../utils/AppError.js");
@@ -22,9 +23,6 @@ const createTeam = catchAsync(
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
         const filtered = filterBody(req.body, 'title', 'description', 'teamLead', 'isActive')
-
-        console.log(filtered.teamLead)
-        console.log(await Users.findById(filtered.teamLead).select('role'))
 
         if (filtered.teamLead) {
             // Find teamLead user
@@ -141,12 +139,12 @@ const getTeam = catchAsync(
 
         // if logged user is not team lead of the team
         if (req.user.role === 'team_lead' && team.teamLead.id.toString() !== req.user.id) {
-            return next(new AppError(403, 'you can not access'));
+            return next(new AppError(403, 'TeamLead can get his or her teams only'));
         }
 
         // if logged user is not member of the team
         if (req.user.role === 'member' && !team.members.includes(req.user.id)) {
-            return next(new AppError(403, 'you can not access'));
+            return next(new AppError(403, 'member can get his or her teams only'));
         }
 
         res.status(200).json({
@@ -203,7 +201,7 @@ const updateTeam = catchAsync(
 /**
  * DeleteTeam
  * admin only: get a particular team by id
- * DELETE /api/v1/teams/:id
+ * DELETE /api/v1/teams/:id (?force=true query supported)
  */
 const deleteTeam = catchAsync(
     /** @type {RequestHandler} */
@@ -214,6 +212,19 @@ const deleteTeam = catchAsync(
 
         if (!team.isActive) return next(new AppError(400, 'Team is already deactive'));
 
+        // get running projects of this team
+        const runningProjects = await Projects.find({ team: team.id, status: { $nin: ['cancelled', 'archived'] } });
+
+        const completedProjects = runningProjects.filter(p => p.status === 'completed');
+        const imcompleteProjects = runningProjects.filter(p => p.status !== 'completed');
+
+        if(imcompleteProjects.length > 0) return next(new AppError(400, `This team has imcomplete projects(${imcompleteProjects.map(p => p.title).join(', ')}) , set team first for them`));
+
+        await Projects.updateMany(
+            { _id: [completedProjects.map(p => p.id)]  },
+            { status: 'archived' }
+        )
+        
         team.isActive = false;
         await team.save();
 

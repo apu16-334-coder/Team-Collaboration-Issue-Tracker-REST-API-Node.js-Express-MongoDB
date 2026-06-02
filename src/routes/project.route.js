@@ -27,7 +27,7 @@ router.route("/")
 // admin: delete a project by id
 // GET /api.v1/projects/:id → get a project
 // PATCH /api.v1/projects/:id → update a project
-// DELETE /api.v1/projects/:id → delete a project
+// DELETE /api.v1/projects/:id → delete a project (?force=true query supported)
 router.route("/:id")
     .get(getProject)
     .patch(restrictTo('admin', 'team_lead'), updateProject)
