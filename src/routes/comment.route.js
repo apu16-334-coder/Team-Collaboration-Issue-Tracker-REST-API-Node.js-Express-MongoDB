@@ -7,6 +7,7 @@ const {
     createComments,
     getIssueComments,
     updateComment,
+    deleteComment,
     
 } = require("../controllers/comment.controller.js");
 
@@ -24,10 +25,10 @@ router.route("/")
 
 // Author only: update a comment by it is id
 // Author/ team_lead/ admin: delete a comment by it is id
-// PATCH /api/v1/issues/:id/comments    →  Update comment
-// DELETE /api/v1/issues/:id/comments    →  delete comment
+// PATCH /api/v1/issues/:id/comments/:commentId    →  Update comment
+// DELETE /api/v1/issues/:id/comments/:commentId    →  delete comment
 router.route("/:commentId")
     .patch(updateComment)
-
+    .delete(deleteComment)
 
 module.exports = router;

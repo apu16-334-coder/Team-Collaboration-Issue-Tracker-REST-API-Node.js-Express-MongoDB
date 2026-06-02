@@ -150,9 +150,9 @@ const updateComment = catchAsync(
         // Find comment
         const comment = await Comments.findById(req.params.commentId);
 
-        if(!comment) return next(new AppError(404, 'comment is not found'));
+        if (!comment) return next(new AppError(404, 'comment is not found'));
 
-        if(comment.author.toString() !== req.user.id) return next(new AppError(403, 'Only author of comment can edit'));
+        if (comment.author.toString() !== req.user.id) return next(new AppError(403, 'Only author of comment can edit'));
 
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
@@ -175,9 +175,45 @@ const updateComment = catchAsync(
     }
 )
 
+/**
+ * deleteComment
+ * admin/ team_lead/ author: delete a comment
+ * DELETE /api/v1/teams/:id
+ */
+const deleteComment = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        // Find comment
+        const comment = await Comments.findById(req.params.commentId)
+            .populate({
+                path: 'issue',
+                select: 'project',
+                populate: {
+                    path: 'project',
+                    select: 'team',
+                    populate: {
+                        path: 'team',
+                        select: 'teamLead'
+                    }
+                }
+            })
+
+        if (!comment) return next(new AppError(404, 'comment is not found'));
+
+        // if logged user is not team lead of this comment issue project team or the author 
+        if (comment.issue.project.team.teamLead.toString() !== req.user.id || comment.author.toString() !== req.user.id) {
+            return next(new AppError(403, 'you can not delete this'));
+        }
+
+        await Comments.findByIdAndDelete(req.params.commentId);
+
+        res.status(204).send();
+    }
+)
+
 module.exports = {
     createComments,
     getIssueComments,
     updateComment,
-
+    deleteComment,
 };

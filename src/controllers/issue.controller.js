@@ -8,7 +8,7 @@ const ApiFeatures = require("../utils/apiFeatures.js");
 const filterBody = require("../utils/filterBody.js");
 const mongoose = require('mongoose');
 
-/**
+/** 
  * @typedef {import('express').RequestHandler} RequestHandler
  */
 
@@ -259,8 +259,8 @@ const updateIssue = catchAsync(
 
 /**
  * deleteIssue
- * admin/ team_lead: get a particular issue by id
- * DELETE /api/v1/teams/:id
+ * admin/ team_lead: delete a particular issue by id
+ * DELETE /api/v1/issues/:id
  */
 const deleteIssue = catchAsync(
     /** @type {RequestHandler} */
