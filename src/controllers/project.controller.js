@@ -1,6 +1,7 @@
 const Teams = require("../models/team.model.js")
 const Users = require("../models/user.model.js")
 const Projects = require("../models/project.model.js")
+const Issues = require("../models/issue.model.js")
 const catchAsync = require('../utils/catchAsync.js')
 const AppError = require("../utils/AppError.js");
 const ApiFeatures = require("../utils/apiFeatures.js");
@@ -110,12 +111,12 @@ const getProject = catchAsync(
 
         // if logged user is not team lead of this project team
         if (req.user.role === 'team_lead' && project.team.teamLead.toString() !== req.user.id) {
-            return next(new AppError(403, 'you can not access'));
+            return next(new AppError(403, 'Team lead can get his or her teams projects only'));
         }
 
         // if logged user is not member of this project team
         if (req.user.role === 'member' && !project.team.members.includes(req.user.id)) {
-            return next(new AppError(403, 'you can not access'));
+            return next(new AppError(403, 'member can get his or her teams projects only'));
         }
 
         res.status(200).json({
@@ -147,7 +148,7 @@ const updateProject = catchAsync(
         }
 
         // if logged user is not team lead of the team of project
-        if (req.user.role === 'team_lead' && project.team.teamLead.toString() !== req.user.id) return next(new AppError(403, 'You can not update this project'));
+        if (req.user.role === 'team_lead' && project.team.teamLead.toString() !== req.user.id) return next(new AppError(403, 'Team lead can update his her teams projects only'));
         
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
@@ -157,8 +158,6 @@ const updateProject = catchAsync(
             : ['title', 'description', 'status']
 
         const filtered = filterBody(req.body, ...allowedFields)
-
-        console.log(filtered)
 
         if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
 
@@ -177,9 +176,6 @@ const updateProject = catchAsync(
 
                 return next(new AppError(errAraay[0], errAraay[1]));
             }
-
-            // if team_lead create project for other's team
-            if (req.user.role === 'team_lead' && team.teamLead.toString() !== req.user.id) return next(new AppError(400, 'TeamLead can create project only for his teams'));
         }
 
         // if status is here
@@ -205,7 +201,7 @@ const updateProject = catchAsync(
 /**
  * deleteProject
  * admin only: get a particular project by id
- * DELETE /api/v1/projects/:id
+ * DELETE /api/v1/projects/:id(?force=true query supported)
  */
 const deleteProject = catchAsync(
     /** @type {RequestHandler} */
@@ -227,10 +223,75 @@ const deleteProject = catchAsync(
     }
 )
 
+/**
+ * getProjectIssues
+ * (admin | team_lead | team members) : Get all the projects of a particular team
+ * GET /api/v1/projects/:id/issues
+ */
+const getProjectIssues = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        // Find project
+        const project = await Projects.findById(req.params.id)
+            .populate('team', 'title teamLead members');
+
+        if (!project) return next(new AppError(404, 'project is not found'));
+
+        // then if project is archived
+        if (project.status === 'archived' || project.status === 'cancelled') {
+            const errArray = req.user.role !== 'admin'
+                ? [404, 'project is not found']
+                : [400, `project is ${project.status}`];
+
+            return next(new AppError(errArray[0], errArray[1]));
+        }
+
+        // if logged user is not team lead of this project team
+        if (req.user.role === 'team_lead' && project.team.teamLead.toString() !== req.user.id) {
+            return next(new AppError(403, 'Team lead can get his or her teams projects issues only'));
+        }
+
+        // if logged user is not member of this project team
+        if (req.user.role === 'member' && !project.team.members.includes(req.user.id)) {
+            return next(new AppError(403, 'member can get his or her teams projects issues only'));
+        }
+
+        const queryConditionsObj = req.user.role !== 'member'
+            ? { project: project.id }
+            : { project: project.id, status: { $nin: ['cancelled'] } }
+
+        const features = new ApiFeatures(Issues.find(queryConditionsObj), req.query)
+            .filter()
+            .search('title', 'description')
+            .sort()
+            .pagination()
+
+        // execute query 
+        const issues = await features.query.populate([
+            { path: 'project', select: 'title' },
+            { path: 'assignedTo', select: 'name email' }
+        ]);
+
+        // count total without pagination
+        const total = await Issues.countDocuments(features.getQueryObjForCount());
+
+        // Send response meta-data for pagination
+        res.status(200).json({
+            success: true,
+            results: issues.length,
+            total,
+            page: features.page,
+            limit: features.limit,
+            data: issues
+        })
+    }
+)
+
 module.exports = {
     createProject,
     getAllProjects,
     getProject,
     updateProject,
-    deleteProject
+    deleteProject,
+    getProjectIssues
 };

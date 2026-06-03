@@ -401,7 +401,11 @@ const getTeamProjects = catchAsync(
             return next(new AppError(403, 'member can get his or her teams projects only'));
         }
 
-        const features = new ApiFeatures(Projects.find({ team: team.id, status: { $nin: ['cancelled', 'archived']} }), req.query)
+        const queryConditionsObj = req.user.role === 'admin'
+            ? { team: team.id }
+            : { team: team.id, status: { $nin: ['cancelled', 'archived'] } };
+
+        const features = new ApiFeatures(Projects.find(queryConditionsObj), req.query)
             .filter()
             .search('title', 'description')
             .sort()
