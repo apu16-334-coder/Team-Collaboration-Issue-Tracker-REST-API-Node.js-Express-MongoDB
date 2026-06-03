@@ -100,13 +100,10 @@ const getProject = catchAsync(
 
         if (!project) return next(new AppError(404, 'project is not found'));
 
-        // then if project is archived
-        if (project.status === 'archived' || project.status === 'cancelled') {
-            const errArray = req.user.role !== 'admin'
-                ? [404, 'project is not found']
-                : [400, `project is ${project.status}`];
-
-            return next(new AppError(errArray[0], errArray[1]));
+        // if logged user is not admin
+        if (req.user.role !== 'admin') {
+            // if project is cancelled or archived
+            if(project.status === 'archived' || project.status === 'cancelled') return next(new AppError(404, 'project is not found'));
         }
 
         // if logged user is not team lead of this project team
