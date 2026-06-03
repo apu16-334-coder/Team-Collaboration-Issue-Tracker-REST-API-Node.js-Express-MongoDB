@@ -373,14 +373,7 @@ const getTeamProjects = catchAsync(
         if (!team) return next(new AppError(404, 'Team is not found'));
 
         // If team is not active
-        if (!team.isActive) {
-            // if logged user is admin
-            const errAraay = req.user.role === 'admin'
-                ? [400, 'Team is not active']
-                : [404, 'Team is not found'];
-
-            return next(new AppError(errAraay[0], errAraay[1]));
-        }
+        if (!team.isActive && req.user.role !== 'admin') return next(new AppError(404, 'Team is not found'));
 
         // if logged user is not team lead of the team
         if (req.user.role === 'team_lead' && team.teamLead.id.toString() !== req.user.id) {
