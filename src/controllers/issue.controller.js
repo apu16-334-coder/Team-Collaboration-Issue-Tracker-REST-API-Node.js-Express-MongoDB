@@ -148,6 +148,18 @@ const getIssue = catchAsync(
 const updateIssue = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
+        // define allowed fields
+        let allowedFields = [];
+
+        // if user is not member
+        if (req.user.role !== 'member') {
+            allowedFields = ['title', 'description', 'status', 'priority', 'type', 'project', 'assignedTo'];
+        } else if (req.user.id === issue.createdBy.toString()) {
+            allowedFields = ['title', 'description', 'status', 'priority', 'type', 'project'];
+        } else if (req.user.id === issue.assignedTo.toString()) {
+            allowedFields = ['status']
+        }
+
         // Find issue
         const issue = await Issues.findById(req.params.id)
             .populate([
@@ -173,11 +185,11 @@ const updateIssue = catchAsync(
 
         // then if issue is cancelled
         if (issue.status === 'cancelled') {
-            const errArray = req.user.role === 'member'
-                ? [404, 'issue is not found']
-                : [400, `issue is ${issue.status}`];
+            // if logged user is member
+            if(req.user.role === 'member') return next(new AppError(404, 'issue is not found'));
 
-            return next(new AppError(errArray[0], errArray[1]));
+            // if logged user is not member
+            allowedFields = ['status']
         }
 
         // if logged user is not team lead of this issue project team
@@ -193,18 +205,7 @@ const updateIssue = catchAsync(
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        // define allowed fields
-        let allowedFields = [];
-
-        // if user is not member
-        if (req.user.role !== 'member') {
-            allowedFields = ['title', 'description', 'status', 'priority', 'type', 'project', 'assignedTo'];
-        } else if (req.user.id === issue.createdBy.toString()) {
-            allowedFields = ['title', 'description', 'status', 'priority', 'type', 'project'];
-        } else if (req.user.id === issue.assignedTo.toString()) {
-            allowedFields = ['status']
-        }
-
+        // filtered allowed fields which are available
         const filtered = filterBody(req.body, ...allowedFields)
 
         if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
@@ -271,13 +272,22 @@ const deleteIssue = catchAsync(
         const issue = await Issues.findById(req.params.id)
             .populate(
                 {
-                    path: 'project', select: 'title team', populate: {
+                    path: 'project', select: 'title team status', populate: {
                         path: 'team',
                         select: 'title teamLead'
                     }
                 }
             );
         if (!issue) return next(new AppError(404, 'issue is not found'));
+
+        // If the project of the issue cancelled or archived 
+        if(issue.project.status === 'cancelled' || issue.project.status === 'archived') {
+            const errArray = req.user.role !== 'admin'
+                ? [404, 'issue is not found']
+                : [400, `Project of the issue is ${issue.project.status}`];
+
+            return next(new AppError(errArray[0], errArray[1]));
+        }
 
         if (issue.status === 'cancelled') return next(new AppError(400, `issue is already cancelled`));
 
