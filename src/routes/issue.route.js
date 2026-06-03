@@ -16,12 +16,6 @@ const {
     
 } = require("../controllers/issue.controller.js");
 
-
-
-
-
-
-
 // ----------------------
 // Issue Routes
 // ----------------------
@@ -42,6 +36,5 @@ router.route("/:id")
     .get(getIssue)
     .patch(updateIssue)
     .delete(restrictTo('admin', 'team_lead'), deleteIssue)
-
 
 module.exports = router;

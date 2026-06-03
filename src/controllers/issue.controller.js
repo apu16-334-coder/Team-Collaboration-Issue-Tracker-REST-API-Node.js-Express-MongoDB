@@ -44,7 +44,7 @@ const createIssue = catchAsync(
             // if assigned to is there
             if (filtered.assignedTo) {
                 // if logged user is memebr and not assigned himself or herself
-                if (req.user.role === 'member' && filtered.assignedTo.toString() !== req.user.id) return next(new AppError(400, 'Member can assigned issue only to him or her'));
+                if (req.user.role === 'member' && filtered.assignedTo.toString() !== req.user.id) return next(new AppError(400, 'Member can assigned issue only to himself or herself'));
 
                 // Team lead can assign only the team member of selected project
                 if (!project?.team.members.includes(filtered.assignedTo)) {
@@ -115,8 +115,7 @@ const getIssue = catchAsync(
                         path: 'team',
                         select: 'title teamLead members'
                     }
-                },
-                { path: 'assignedTo', select: 'name email' }
+                }
             ]);
 
         if (!issue) return next(new AppError(404, 'issue is not found'));
@@ -132,12 +131,12 @@ const getIssue = catchAsync(
 
         // if logged user is not team lead of this issue project team
         if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
-            return next(new AppError(403, 'you can not access this'));
+            return next(new AppError(403, 'Team lead can get his or her teams projects issues only'));
         }
 
         // if logged user is not assigned to this issue
-        if (req.user.role === 'member' && issue.assignedTo.id.toString() !== req.user.id) {
-            return next(new AppError(403, 'you can not access this'));
+        if (req.user.role === 'member' && !issue.project.team.members.includes()) {
+            return next(new AppError(403, 'Member can get his or her teams projects issues only'));
         }
 
         res.status(200).json({
@@ -180,12 +179,12 @@ const updateIssue = catchAsync(
 
         // if logged user is not team lead of this issue project team
         if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
-            return next(new AppError(403, 'you can not edit this'));
+            return next(new AppError(403, 'Team lead can update only his or her teams projects issues'));
         }
 
         // if logged user is not assigned to this issue
         if (req.user.role === 'member' && issue.assignedTo.toString() !== req.user.id) {
-            return next(new AppError(403, 'you can not edit this'));
+            return next(new AppError(403, 'Member can update only the issues he or she is assigned'));
         }
 
         // If request body is invalid
@@ -281,7 +280,7 @@ const deleteIssue = catchAsync(
 
         // if logged user is not team lead of this issue project team
         if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
-            return next(new AppError(403, 'you can not delete this'));
+            return next(new AppError(403, 'Team lead can delete only his her teams projects issues'));
         }
 
         issue.status = 'cancelled';

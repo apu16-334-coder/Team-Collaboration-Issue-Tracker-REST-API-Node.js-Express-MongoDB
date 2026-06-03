@@ -54,12 +54,12 @@ const createComments = catchAsync(
 
             // if logged user is not team lead of this issue project team
             if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
-                return next(new AppError(403, 'you can not create this'));
+                return next(new AppError(403, 'Team lead can only comments in his or her teams projects issues'));
             }
 
             // if logged user is not member of this issue project team
             if (req.user.role === 'member' && !issue.project.team.members.includes(req.user.id)) {
-                return next(new AppError(403, 'you can not create this'));
+                return next(new AppError(403, 'member can only comments in his or her teams projects issues'));
             }
         }
 
@@ -104,12 +104,12 @@ const getIssueComments = catchAsync(
 
         // if logged user is not team lead of this issue project team
         if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
-            return next(new AppError(403, 'you can not access this'));
+            return next(new AppError(403, 'Team lead can only get comments of his teams projects issues'));
         }
 
         // if logged user is not member of this issue project team
         if (req.user.role === 'member' && !issue.project.team.members.includes(req.user.id)) {
-            return next(new AppError(403, 'you can not access this'));
+            return next(new AppError(403, 'members can only get comments of his teams projects issues'));
         }
 
         const features = new ApiFeatures(Comments.find({ issue: req.params.id }), req.query)
@@ -202,7 +202,7 @@ const deleteComment = catchAsync(
 
         // if logged user is not team lead of this comment issue project team or the author 
         if (comment.issue.project.team.teamLead.toString() !== req.user.id || comment.author.toString() !== req.user.id) {
-            return next(new AppError(403, 'you can not delete this'));
+            return next(new AppError(403, 'Team lead can delete comment only of his or her teams projects issues'));
         }
 
         await Comments.findByIdAndDelete(req.params.commentId);
