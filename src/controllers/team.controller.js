@@ -44,7 +44,7 @@ const createTeam = catchAsync(
 )
 
 /**
- * GetAllTeams
+ * getAllTeams
  * Admin-only: get all the teams
  * GET /api/v1/teams
  */
@@ -79,7 +79,7 @@ const getAllTeams = catchAsync(
 )
 
 /**
- * GetMyTeams
+ * getMyTeams
  * Team_lead only: get all the teams of logged team_lead
  * GET /api/v1/teams/my
  */
@@ -113,7 +113,7 @@ const getMyTeams = catchAsync(
 )
 
 /**
- * GetTeam
+ * getTeam
  * (admin | team_lead of team | members of team): get a particular team by id
  * GET /api/v1/teams/:id
  */
@@ -157,7 +157,7 @@ const getTeam = catchAsync(
 )
 
 /**
- * UpdateTeam
+ * updateTeam
  * admin only: update a particular team title/ description/ team_lead by id
  * PATCH /api/v1/teams/:id
  */
@@ -201,7 +201,7 @@ const updateTeam = catchAsync(
 )
 
 /**
- * DeleteTeam
+ * deleteTeam
  * admin only: get a particular team by id
  * DELETE /api/v1/teams/:id (?force=true query supported)
  */
@@ -258,7 +258,7 @@ const teamReactivate = catchAsync(
 )
 
 /**
- * AddTeamMembers
+ * addTeamMembers
  * admin only: Adding members in a particular team by id
  * POST /api/v1/teams/:id/members
  */
@@ -332,7 +332,7 @@ const addTeamMembers = catchAsync(
 )
 
 /**
- * DeleteTeamMember
+ * removeTeamMember
  * (admin only): delete a member in a particulat team by id
  * DELETE /api/v1/teams/:id/members/:userId
  */
@@ -365,14 +365,63 @@ const removeTeamMember = catchAsync(
 )
 
 /**
- * GetTeamProjects
+ * getTeamProjects
  * (admin | team_lead | team members) : Get all the projects of a particular team
  * GET /api/v1/teams/:id/projects
  */
 const getTeamProjects = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        res.send("Getting members in a particulat team by id....")
+        // Find team
+        const team = await Teams.findById(req.params.id)
+            .populate([
+                { path: 'teamLead', select: 'name email' },
+                { path: 'members', select: 'name email' }
+            ]);
+
+        if (!team) return next(new AppError(404, 'Team is not found'));
+
+        // If team is not active
+        if (!team.isActive) {
+            // if logged user is admin
+            const errAraay = req.user.role === 'admin'
+                ? [400, 'Team is not active']
+                : [404, 'Team is not found'];
+
+            return next(new AppError(errAraay[0], errAraay[1]));
+        }
+
+        // if logged user is not team lead of the team
+        if (req.user.role === 'team_lead' && team.teamLead.id.toString() !== req.user.id) {
+            return next(new AppError(403, 'TeamLead can get his or her teams projects only'));
+        }
+
+        // if logged user is not member of the team
+        if (req.user.role === 'member' && !team.members.includes(req.user.id)) {
+            return next(new AppError(403, 'member can get his or her teams projects only'));
+        }
+
+        const features = new ApiFeatures(Projects.find({ team: team.id, status: { $nin: ['cancelled', 'archived']} }), req.query)
+            .filter()
+            .search('title', 'description')
+            .sort()
+            .pagination()
+
+        // execute query 
+        const projects = await features.query.populate('team', 'title');
+
+        // count total without pagination
+        const total = await Projects.countDocuments(features.getQueryObjForCount());
+
+        // Send response meta-data for pagination
+        res.status(200).json({
+            success: true,
+            results: projects.length,
+            total,
+            page: features.page,
+            limit: features.limit,
+            data: projects
+        })
     }
 )
 
