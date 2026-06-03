@@ -55,7 +55,7 @@ router.post("/:id/members", restrictTo('admin'), addTeamMembers)
 router.delete('/:id/members/:userId', restrictTo('admin'), removeTeamMember)
 
 // admin/ team_lead/ member: get projects of a team
-// DELETE /api.v1/teams/:id/projects
+// GET /api.v1/teams/:id/projects
 router.get('/:id/projects', getTeamProjects)
 
 module.exports = router;
