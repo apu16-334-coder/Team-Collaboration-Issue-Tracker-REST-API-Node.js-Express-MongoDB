@@ -111,7 +111,7 @@ const getIssue = catchAsync(
         const issue = await Issues.findById(req.params.id)
             .populate([
                 {
-                    path: 'project', select: 'title', populate: {
+                    path: 'project', select: 'title status', populate: {
                         path: 'team',
                         select: 'title teamLead members'
                     }
@@ -120,9 +120,15 @@ const getIssue = catchAsync(
 
         if (!issue) return next(new AppError(404, 'issue is not found'));
 
+        // if logged user is not admin
+        if (req.user.role !== 'admin') {
+            // if project is cancelled or archived
+            if (project.status === 'archived' || project.status === 'cancelled') return next(new AppError(404, 'issue is not found'));
+        }
+
         // then if issue is cancelled and logged user is member
         if (issue.status === 'cancelled' && req.user.role === 'member') return next(new AppError(404, 'issue is not found'));
-        
+
         // if logged user is not team lead of this issue project team
         if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
             return next(new AppError(403, 'Team lead can get his or her teams projects issues only'));
@@ -175,7 +181,7 @@ const updateIssue = catchAsync(
         if (!issue) return next(new AppError(404, 'issue is not found'));
 
         // If the project of the issue cancelled or archived 
-        if(issue.project.status === 'cancelled' || issue.project.status === 'archived') {
+        if (issue.project.status === 'cancelled' || issue.project.status === 'archived') {
             const errArray = req.user.role !== 'admin'
                 ? [404, 'issue is not found']
                 : [400, `Project of the issue is ${issue.project.status}`];
@@ -186,7 +192,7 @@ const updateIssue = catchAsync(
         // then if issue is cancelled
         if (issue.status === 'cancelled') {
             // if logged user is member
-            if(req.user.role === 'member') return next(new AppError(404, 'issue is not found'));
+            if (req.user.role === 'member') return next(new AppError(404, 'issue is not found'));
 
             // if logged user is not member
             allowedFields = ['status']
@@ -281,7 +287,7 @@ const deleteIssue = catchAsync(
         if (!issue) return next(new AppError(404, 'issue is not found'));
 
         // If the project of the issue cancelled or archived 
-        if(issue.project.status === 'cancelled' || issue.project.status === 'archived') {
+        if (issue.project.status === 'cancelled' || issue.project.status === 'archived') {
             const errArray = req.user.role !== 'admin'
                 ? [404, 'issue is not found']
                 : [400, `Project of the issue is ${issue.project.status}`];

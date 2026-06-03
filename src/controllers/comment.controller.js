@@ -84,7 +84,7 @@ const getIssueComments = catchAsync(
         const issue = await Issues.findById(req.params.id)
             .populate({
                 path: 'project',
-                select: 'title',
+                select: 'title status',
                 populate: {
                     path: 'team',
                     select: 'title teamLead members'
