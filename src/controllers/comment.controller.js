@@ -93,15 +93,9 @@ const getIssueComments = catchAsync(
 
         if (!issue) return next(new AppError(404, 'issue is not found'));
 
-        // then if issue is cancelled
-        if (issue.status === 'cancelled') {
-            const errArray = req.user.role === 'member'
-                ? [404, 'issue is not found']
-                : [400, `issue is ${issue.status}`];
-
-            return next(new AppError(errArray[0], errArray[1]));
-        }
-
+        // then if issue is cancelled and logged user is member
+        if (issue.status === 'cancelled' && req.user.role === 'member') return next(new AppError(404, 'issue is not found'));
+        
         // if logged user is not team lead of this issue project team
         if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
             return next(new AppError(403, 'Team lead can only get comments of his teams projects issues'));

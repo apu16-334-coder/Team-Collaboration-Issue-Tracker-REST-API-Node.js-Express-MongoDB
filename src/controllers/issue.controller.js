@@ -65,8 +65,8 @@ const createIssue = catchAsync(
 )
 
 /**
- * GetAllProjects
- * Admin-only: get all the projects
+ * getAllIssues
+ * Admin-only: get all the issues
  * GET /api/v1/projects
  */
 const getAllIssues = catchAsync(
@@ -100,8 +100,8 @@ const getAllIssues = catchAsync(
 )
 
 /**
- * getProject
- * (admin | team_lead of team | member): get a particular project by id
+ * getIssue
+ * (admin | team_lead of team | member): get a particular issue by id
  * GET /api/v1/projects/:id
  */
 const getIssue = catchAsync(
@@ -152,7 +152,7 @@ const updateIssue = catchAsync(
         const issue = await Issues.findById(req.params.id)
             .populate([
                 {
-                    path: 'project', select: 'title team', populate: {
+                    path: 'project', select: 'title team status', populate: {
                         path: 'team',
                         select: 'title teamLead members'
                     }
@@ -161,6 +161,15 @@ const updateIssue = catchAsync(
             ]);
 
         if (!issue) return next(new AppError(404, 'issue is not found'));
+
+        // If the project of the issue cancelled or archived 
+        if(issue.project.status === 'cancelled' || issue.project.status === 'archived') {
+            const errArray = req.user.role !== 'admin'
+                ? [404, 'issue is not found']
+                : [400, `Project of the issue is ${issue.project.status}`];
+
+            return next(new AppError(errArray[0], errArray[1]));
+        }
 
         // then if issue is cancelled
         if (issue.status === 'cancelled') {
