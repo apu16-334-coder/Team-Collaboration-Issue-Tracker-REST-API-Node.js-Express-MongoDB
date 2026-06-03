@@ -30,7 +30,7 @@ const createTeam = catchAsync(
             if (!lead) return next(new AppError(404, 'Team_lead is not found'));
             if (lead.role !== 'team_lead') return (400, 'Only user with role team_lead can assign as a lead in a team');
             if (!lead.isActive) return next(new AppError(400, 'Team_lead is not active'));
-        }else {
+        } else {
             return next(new AppError(400, 'teamLead is required'));
         }
 
@@ -214,19 +214,18 @@ const deleteTeam = catchAsync(
 
         if (!team.isActive) return next(new AppError(400, 'Team is already deactive'));
 
-        // get running projects of this team
-        const runningProjects = await Projects.find({ team: team.id, status: { $nin: ['cancelled', 'archived'] } });
-
-        const completedProjects = runningProjects.filter(p => p.status === 'completed');
-        const imcompleteProjects = runningProjects.filter(p => p.status !== 'completed');
-
-        if(imcompleteProjects.length > 0) return next(new AppError(400, `This team has imcomplete projects(${imcompleteProjects.map(p => p.title).join(', ')}) , set team first for them`));
-
+        // set status of all planning or active projects of this team to on_hold
         await Projects.updateMany(
-            { _id: [completedProjects.map(p => p.id)]  },
+            { team: team.id, status: { $in: ['planning', 'active' ] } },
+            { status: 'on_hold' }
+        )
+
+        // set status of all completed projects of this team to archived
+        await Projects.updateMany(
+            { team: team.id, status: 'completed'},
             { status: 'archived' }
         )
-        
+
         team.isActive = false;
         await team.save();
 
