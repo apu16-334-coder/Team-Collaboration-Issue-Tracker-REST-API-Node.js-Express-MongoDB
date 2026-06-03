@@ -30,6 +30,8 @@ const createTeam = catchAsync(
             if (!lead) return next(new AppError(404, 'Team_lead is not found'));
             if (lead.role !== 'team_lead') return (400, 'Only user with role team_lead can assign as a lead in a team');
             if (!lead.isActive) return next(new AppError(400, 'Team_lead is not active'));
+        }else {
+            return next(new AppError(400, 'teamLead is required'));
         }
 
         const team = await Teams.create(filtered);
@@ -258,7 +260,7 @@ const teamReactivate = catchAsync(
 
 /**
  * AddTeamMembers
- * admin only: Adding members in a particulat team by id
+ * admin only: Adding members in a particular team by id
  * POST /api/v1/teams/:id/members
  */
 const addTeamMembers = catchAsync(

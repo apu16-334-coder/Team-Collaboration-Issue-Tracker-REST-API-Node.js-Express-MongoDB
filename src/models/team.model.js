@@ -16,7 +16,6 @@ const teamSchema = new mongoose.Schema({
     teamLead: {
         type: mongoose.Schema.ObjectId,
         ref: 'User',
-        required: [true, "teamLead is required"],
         index: true
     },  // single lead
     members: [{
@@ -33,6 +32,9 @@ const teamSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+
+// Compound indexes of teamLead and member
+teamSchema.index({ teamLead: 1, members: 1 });
 
 // Transform output for JSON / Object
 // Remove _id and __v, add id string

@@ -209,13 +209,11 @@ const deleteUser = catchAsync(
 
         // If target user is teamLead
         if (user.role === 'team_lead') {
-            // get all active teams of this team_lead
-            const activeTeams = await Teams.find({ teamLead: user.id, isActive: true });
-
-            // If team_lead has any teams then give feedback to reassign them first
-            if (activeTeams.length > 0) {
-                return next(new AppError(400, `Team_lead has these ${activeTeams.map(t => t.title)} active teams, Reassign them first`));
-            }
+            // set all of his team's teamlead null
+            await Teams.updateMany(
+                { teamLead: user.id, isActive: true },
+                { teamLead: null }
+            );
         }
 
         // If taget user is member
@@ -297,13 +295,11 @@ const changeUserRole = catchAsync(
 
         // If target user is teamLead
         if (user.role === 'team_lead') {
-            // get all active teams of this team_lead
-            const activeTeams = await Teams.find({ teamLead: user.id, isActive: true });
-
-            // If team_lead has any teams then give feedback to reassign them first
-            if (activeTeams.length > 0) {
-                return next(new AppError(400, `Team_lead has these ${activeTeams.map(t => t.title)} active teams, Reassign them first`));
-            }
+            // set all of his team's teamlead null
+            await Teams.updateMany(
+                { teamLead: user.id, isActive: true },
+                { teamLead: null }
+            );
         }
 
         // If taget user is member
