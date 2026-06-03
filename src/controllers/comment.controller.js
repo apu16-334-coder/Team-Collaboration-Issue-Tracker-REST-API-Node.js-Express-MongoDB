@@ -93,9 +93,15 @@ const getIssueComments = catchAsync(
 
         if (!issue) return next(new AppError(404, 'issue is not found'));
 
+         // the if project of the issue is cancelled or archived
+        if(issue.project.status === 'cancelled' || issue.project.status === 'archived') {
+            // If logged user is not admin
+            if(req.user.role !== 'member') return next(new AppError(404, 'issue is not found')); 
+        }
+
         // then if issue is cancelled and logged user is member
         if (issue.status === 'cancelled' && req.user.role === 'member') return next(new AppError(404, 'issue is not found'));
-        
+
         // if logged user is not team lead of this issue project team
         if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
             return next(new AppError(403, 'Team lead can only get comments of his teams projects issues'));
@@ -142,9 +148,31 @@ const updateComment = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
         // Find comment
-        const comment = await Comments.findById(req.params.commentId);
+        const comment = await Comments.findById(req.params.commentId)
+            .populate({
+                path: 'issue',
+                select: 'project status',
+                populate: {
+                    path: 'project',
+                    select: 'status'
+                }
+            })
 
         if (!comment) return next(new AppError(404, 'comment is not found'));
+
+        // If issue of the comment is cancelled
+        if(comment.issue.status === 'cancelled') {
+            const errAraay = req.user.role === "member"
+                ? [404, 'comment is not found'] // if logged user is member
+                : [400, 'Issue of the comment is cancelled']; // if not
+        }
+
+        // If project of the issue of the comment is cancelled or archived
+        if(comment.issue.project.status === 'cancelled' || comment.issue.project.status === 'archived') {
+            const errAraay = req.user.role !== "admin"
+                ? [404, 'comment is not found'] // if logged user is not admin
+                : [400, `project of the issue of the comment is ${comment.issue.project.status}`]; // if admin
+        }
 
         if (comment.author.toString() !== req.user.id) return next(new AppError(403, 'Only author of comment can edit'));
 
@@ -181,10 +209,10 @@ const deleteComment = catchAsync(
         const comment = await Comments.findById(req.params.commentId)
             .populate({
                 path: 'issue',
-                select: 'project',
+                select: 'project status',
                 populate: {
                     path: 'project',
-                    select: 'team',
+                    select: 'team status',
                     populate: {
                         path: 'team',
                         select: 'teamLead'
@@ -194,9 +222,23 @@ const deleteComment = catchAsync(
 
         if (!comment) return next(new AppError(404, 'comment is not found'));
 
-        // if logged user is not team lead of this comment issue project team or the author 
+        // If issue of the comment is cancelled
+        if(comment.issue.status === 'cancelled') {
+            const errAraay = req.user.role === "member"
+                ? [404, 'comment is not found'] // if logged user is member
+                : [400, 'Issue of the comment is cancelled']; // if not
+        }
+
+        // If project of the issue of the comment is cancelled or archived
+        if(comment.issue.project.status === 'cancelled' || comment.issue.project.status === 'archived') {
+            const errAraay = req.user.role !== "admin"
+                ? [404, 'comment is not found'] // if logged user is not admin
+                : [400, `project of the issue of the comment is ${comment.issue.project.status}`]; // if admin
+        }
+
+        // if logged user is not team lead of this comment issue project team or the author
         if (comment.issue.project.team.teamLead.toString() !== req.user.id || comment.author.toString() !== req.user.id) {
-            return next(new AppError(403, 'Team lead can delete comment only of his or her teams projects issues'));
+            return next(new AppError(403, 'Team lead can delete comment only of his or her teams projects issues or author can delete his or her comments'));
         }
 
         await Comments.findByIdAndDelete(req.params.commentId);

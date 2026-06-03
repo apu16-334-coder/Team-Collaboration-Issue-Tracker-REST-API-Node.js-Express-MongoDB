@@ -123,7 +123,7 @@ const getIssue = catchAsync(
         // if logged user is not admin
         if (req.user.role !== 'admin') {
             // if project is cancelled or archived
-            if (project.status === 'archived' || project.status === 'cancelled') return next(new AppError(404, 'issue is not found'));
+            if (issue.project.status === 'archived' || issue.project.status === 'cancelled') return next(new AppError(404, 'issue is not found'));
         }
 
         // then if issue is cancelled and logged user is member
