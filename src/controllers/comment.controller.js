@@ -183,7 +183,7 @@ const updateComment = catchAsync(
 
         const updatedComment = await Comments.findByIdAndUpdate(
             req.params.commentId,
-            { text: req.body.text },
+            { text: req.body.text, isEdited: true },
             { returnDocument: 'after', runValidators: true }
         ).populate([
             { path: 'issue', select: 'title' },

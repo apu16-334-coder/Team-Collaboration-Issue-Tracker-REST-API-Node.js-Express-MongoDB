@@ -13,7 +13,7 @@ const {
     getIssue,
     updateIssue,
     deleteIssue,
-    
+    issueReopen
 } = require("../controllers/issue.controller.js");
 
 // ----------------------
@@ -36,5 +36,11 @@ router.route("/:id")
     .get(getIssue)
     .patch(updateIssue)
     .delete(restrictTo('admin', 'team_lead'), deleteIssue)
+
+// admin/ team_lead: re-open a particular issue by id;
+// GET /api.v1/issues/reopen:id → reopen a issue
+router.patch("/:id/reopen", restrictTo('admin', 'team_lead'), issueReopen);
+
+
 
 module.exports = router;

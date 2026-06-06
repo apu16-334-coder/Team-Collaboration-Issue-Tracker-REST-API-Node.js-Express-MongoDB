@@ -2,6 +2,7 @@
 const catchAsync = require("../utils/catchAsync.js")
 const Users = require("../models/user.model.js")
 const AppError = require("../utils/AppError.js")
+const filterBody = require("../utils/filterBody.js")
 
 const bcrypt = require('bcrypt');
 const jwt = require("jsonwebtoken");
@@ -120,7 +121,7 @@ const changePassword = catchAsync(
 
         // Find current user + password
         const user = await Users.findById(req.user.id).select('+password');
-        if(!user || !user.isActive) return next(new AppError(404, "User not found"));
+        if(!user || !user.isActive) return next(new AppError(404, "User is not found"));
 
         if(! await bcrypt.compare(currentPassword, user.password)) {
             return next(new AppError(401, 'Current password is incorrect'))

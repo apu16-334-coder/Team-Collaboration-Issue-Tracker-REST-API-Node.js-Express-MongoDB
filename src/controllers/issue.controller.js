@@ -154,29 +154,14 @@ const getIssue = catchAsync(
 const updateIssue = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        // define allowed fields
-        let allowedFields = [];
-
-        // if user is not member
-        if (req.user.role !== 'member') {
-            allowedFields = ['title', 'description', 'status', 'priority', 'type', 'project', 'assignedTo'];
-        } else if (req.user.id === issue.createdBy.toString()) {
-            allowedFields = ['title', 'description', 'status', 'priority', 'type', 'project'];
-        } else if (req.user.id === issue.assignedTo.toString()) {
-            allowedFields = ['status']
-        }
-
         // Find issue
         const issue = await Issues.findById(req.params.id)
-            .populate([
-                {
-                    path: 'project', select: 'title team status', populate: {
-                        path: 'team',
-                        select: 'title teamLead members'
-                    }
-                },
-                { path: 'assignedTo', select: 'name email' }
-            ]);
+            .populate({
+                path: 'project', select: 'team status', populate: {
+                    path: 'team',
+                    select: 'title teamLead members'
+                }
+            });
 
         if (!issue) return next(new AppError(404, 'issue is not found'));
 
@@ -191,11 +176,11 @@ const updateIssue = catchAsync(
 
         // then if issue is cancelled
         if (issue.status === 'cancelled') {
-            // if logged user is member
-            if (req.user.role === 'member') return next(new AppError(404, 'issue is not found'));
+            const errArray = req.user.role === 'member'
+                ? [404, 'issue is not found']
+                : [400, `Issue is ${issue.status}, re-open to update`];
 
-            // if logged user is not member
-            allowedFields = ['status']
+            return next(new AppError(errArray[0], errArray[1]));
         }
 
         // if logged user is not team lead of this issue project team
@@ -210,6 +195,18 @@ const updateIssue = catchAsync(
 
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
+
+        // define allowed fields
+        let allowedFields = [];
+
+        // if user is not member
+        if (req.user.role !== 'member') {
+            allowedFields = ['title', 'description', 'status', 'priority', 'type', 'project', 'assignedTo'];
+        } else if (req.user.id === issue.createdBy.toString()) {
+            allowedFields = ['title', 'description', 'status', 'priority', 'type', 'project'];
+        } else if (req.user.id === issue.assignedTo.toString()) {
+            allowedFields = ['status']
+        }
 
         // filtered allowed fields which are available
         const filtered = filterBody(req.body, ...allowedFields)
@@ -238,6 +235,14 @@ const updateIssue = catchAsync(
                 if (!project?.team.members.includes(filtered.assignedTo)) {
                     return next(new AppError(400, 'Only team member of selected project can assign for issue'));
                 }
+            }
+        }
+
+        // if assigned to is there
+        if (filtered.assignedTo) {
+            // Team lead can assign only the team member of selected project
+            if (!issue.project.team.members.includes(filtered.assignedTo)) {
+                return next(new AppError(400, 'Only team member of selected project can assign for issue'));
             }
         }
 
@@ -309,10 +314,57 @@ const deleteIssue = catchAsync(
     }
 )
 
+/**
+ * issueReopen
+ * admin/ team_lead: reopen a particular issue by id
+ * PATCH /api/v1/issues/:id/reopen
+ */
+const issueReopen = catchAsync(
+    /** @type {RequestHandler} */
+    async (req, res, next) => {
+        // Find Team
+        const issue = await Issues.findById(req.params.id)
+            .populate(
+                {
+                    path: 'project', select: 'title team status', populate: {
+                        path: 'team',
+                        select: 'title teamLead'
+                    }
+                }
+            );
+        if (!issue) return next(new AppError(404, 'issue is not found'));
+
+        // If the project of the issue cancelled or archived 
+        if (issue.project.status === 'cancelled' || issue.project.status === 'archived') {
+            const errArray = req.user.role !== 'admin'
+                ? [404, 'issue is not found']
+                : [400, `Project of the issue is ${issue.project.status}`];
+
+            return next(new AppError(errArray[0], errArray[1]));
+        }
+
+        if (issue.status !== 'cancelled') return next(new AppError(400, `issue is not cancelled`));
+
+        // if logged user is not team lead of this issue project team
+        if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
+            return next(new AppError(403, 'Team lead can reopen only his her teams projects issues'));
+        }
+
+        issue.status = 'open';
+
+        await issue.save();
+        res.status(200).json({
+            success: true,
+            data: issue
+        })
+    }
+)
+
 module.exports = {
     createIssue,
     getAllIssues,
     getIssue,
     updateIssue,
     deleteIssue,
+    issueReopen
 };
