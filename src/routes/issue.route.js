@@ -41,6 +41,4 @@ router.route("/:id")
 // GET /api.v1/issues/reopen:id → reopen a issue
 router.patch("/:id/reopen", restrictTo('admin', 'team_lead'), issueReopen);
 
-
-
 module.exports = router;

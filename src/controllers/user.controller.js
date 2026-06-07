@@ -209,7 +209,7 @@ const deleteUser = catchAsync(
 
         // If target user is teamLead
         if (user.role === 'team_lead') {
-            // set all of his team's teamlead null
+            // set all of his active team's teamlead null
             await Teams.updateMany(
                 { teamLead: user.id, isActive: true },
                 { teamLead: null }
@@ -246,11 +246,6 @@ const deleteUser = catchAsync(
 const userReactivate = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        // Prevent self reactivate through this endpoint
-        if (req.user.id === req.params.id) {
-            return next(new AppError(403, "Admin cannot reactivate his own profile"));
-        }
-
         // find user
         const user = await Users.findById(req.params.id)
         if (!user) return next(new AppError(404, 'User is not found'));
@@ -297,7 +292,7 @@ const changeUserRole = catchAsync(
         if (user.role === 'team_lead') {
             // set all of his team's teamlead null
             await Teams.updateMany(
-                { teamLead: user.id, isActive: true },
+                { teamLead: user.id},
                 { teamLead: null }
             );
         }
