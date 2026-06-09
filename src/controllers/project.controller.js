@@ -131,11 +131,6 @@ const getProject = catchAsync(
 const updateProject = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        // allowed fields to update
-        let allowedFields = req.user.role === 'admin'
-            ? ['title', 'description', 'status', 'team', 'dueDate']
-            : ['title', 'description', 'status']
-
         // Find team
         const project = await Projects.findById(req.params.id).populate('team', 'teamLead');
         if (!project) return next(new AppError(404, 'Project is not found'));
@@ -143,10 +138,11 @@ const updateProject = catchAsync(
         // then if project is archived or cancelled
         if (project.status === 'archived' || project.status === 'cancelled') {
             // if logged user is not admin
-            if(req.user.role !== 'admin') return next(new AppError(404, 'Project is not found'));
+                const errAraay = req.user.role !== 'admin'
+                    ? [404, 'Project is not found']
+                    : [400, `Project is ${project.status}`];
 
-            // if logged user is admin then can only update status of project
-            allowedFields = ['status'];
+                return next(new AppError(errAraay[0], errAraay[1]));          
         }
 
         // if logged user is not team lead of the team of project
@@ -154,6 +150,11 @@ const updateProject = catchAsync(
         
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
+
+        // allowed fields to update
+        let allowedFields = req.user.role === 'admin'
+            ? ['title', 'description', 'status', 'team', 'dueDate']
+            : ['title', 'description', 'status']
 
         // Filterd allowed fields which are available 
         const filtered = filterBody(req.body, ...allowedFields)

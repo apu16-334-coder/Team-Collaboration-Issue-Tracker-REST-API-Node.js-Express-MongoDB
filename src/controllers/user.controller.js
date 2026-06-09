@@ -232,20 +232,20 @@ const deleteUser = catchAsync(
             );
 
             // First find all running projects of his or her teams
-            const imcompleteProjects = await Projects.find({
+            const runningProjects = await Projects.find({
                 team: { $in: allTeamsIds },
-                status: { $nin: ['completed', 'archived'] }
+                status: { $nin: ['cancelled', 'archived'] }
             }).select('_id')
 
-            const imcompleteProjectsIds = imcompleteProjects.map(p => p._id)
+            const runningProjectsIds = runningProjects.map(p => p._id)
 
-            if (imcompleteProjectsIds.length > 0) {
+            if (runningProjectsIds.length > 0) {
                 // remove from any imcomplete issue he or she assigned
                 await Issues.updateMany(
                     {
                         assignedTo: user.id,
-                        status: { $nin: ['closed', 'cancelled'] },
-                        project: { $in: imcompleteProjectsIds }
+                        status: { $nin: ['cancelled'] },
+                        project: { $in: runningProjectsIds }
                     },
                     { assignedTo: null }
                 )
@@ -335,20 +335,20 @@ const changeUserRole = catchAsync(
             );
 
             // First find all running projects of his or her teams
-            const imcompleteProjects = await Projects.find({
+            const runningProjects = await Projects.find({
                 team: { $in: allTeamsIds },
-                status: { $nin: ['completed', 'archived'] }
+                status: { $nin: ['cancelled', 'archived'] }
             }).select('_id')
 
-            const imcompleteProjectsIds = imcompleteProjects.map(p => p._id)
+            const runningProjectsIds = runningProjects.map(p => p._id)
 
-            if (imcompleteProjectsIds.length > 0) {
+            if (runningProjectsIds.length > 0) {
                 // remove from any imcomplete issue he or she assigned
                 await Issues.updateMany(
                     {
                         assignedTo: user.id,
-                        status: { $nin: ['closed'] },
-                        project: { $in: imcompleteProjectsIds }
+                        status: { $nin: ['cancelled'] },
+                        project: { $in: runningProjectsIds }
                     },
                     { assignedTo: null }
                 )

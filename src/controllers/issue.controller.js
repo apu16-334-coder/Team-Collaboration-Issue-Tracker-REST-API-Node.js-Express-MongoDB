@@ -316,57 +316,10 @@ const deleteIssue = catchAsync(
     }
 )
 
-/**
- * issueReopen
- * admin/ team_lead: reopen a particular issue by id
- * PATCH /api/v1/issues/:id/reopen
- */
-const issueReopen = catchAsync(
-    /** @type {RequestHandler} */
-    async (req, res, next) => {
-        // Find Team
-        const issue = await Issues.findById(req.params.id)
-            .populate(
-                {
-                    path: 'project', select: 'title team status', populate: {
-                        path: 'team',
-                        select: 'title teamLead'
-                    }
-                }
-            );
-        if (!issue) return next(new AppError(404, 'issue is not found'));
-
-        // If the project of the issue cancelled or archived 
-        if (issue.project.status === 'cancelled' || issue.project.status === 'archived') {
-            const errArray = req.user.role !== 'admin'
-                ? [404, 'issue is not found']
-                : [400, `Project of the issue is ${issue.project.status}`];
-
-            return next(new AppError(errArray[0], errArray[1]));
-        }
-
-        if (issue.status !== 'cancelled') return next(new AppError(400, `issue is not cancelled`));
-
-        // if logged user is not team lead of this issue project team
-        if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
-            return next(new AppError(403, 'Team lead can reopen only his her teams projects issues'));
-        }
-
-        issue.status = 'open';
-
-        await issue.save();
-        res.status(200).json({
-            success: true,
-            data: issue
-        })
-    }
-)
-
 module.exports = {
     createIssue,
     getAllIssues,
     getIssue,
     updateIssue,
     deleteIssue,
-    issueReopen
 };
