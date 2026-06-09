@@ -165,9 +165,14 @@ const updateTeam = catchAsync(
         if (filtered.teamLead) {
             // Find teamLead user
             const lead = await Users.findById(filtered.teamLead).select('isActive role')
+
             if (!lead) return next(new AppError(404, 'Team_lead is not found'));
-            if (lead.role !== 'team_lead') return (400, 'Only user with role team_lead can assign as a lead in a team');
-            if (!lead.isActive) return next(new AppError(400, 'Team_lead is not active'));
+            console.log("yes teamLead");
+
+            if (lead.role !== 'team_lead') return next(new AppError(400, 'Only user with role team_lead can assign as a lead in a team'));
+            console.log("yes teamLead");
+
+            if (!lead.isActive) return next(new AppError(400, 'Team_lead is not active'));    
         }
 
         // Find team

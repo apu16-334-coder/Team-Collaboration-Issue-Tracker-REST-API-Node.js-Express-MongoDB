@@ -219,28 +219,37 @@ const deleteUser = catchAsync(
 
         // If taget user is member
         if (user.role === 'member') {
-            // remove from any active teams he or she belongs
+            // find all active teams he or she belongs
+            const allTeams = await Teams.find({ members: user.id, isActive: true })
+                .select('_id');
+
+            const allTeamsIds = allTeams.map(p => p._id);
+
+            // remove from all active teams he or she belongs
             await Teams.updateMany(
-                { members: user.id, isActive: true },
+                { _id: { $in: allTeamsIds } },
                 { $pull: { members: user.id } }
             );
 
-            // First find running projects
+            // First find all running projects of his or her teams
             const runningProjects = await Projects.find({
+                team: { $in: allTeamsIds },
                 status: { $nin: ['completed', 'cancelled', 'archived'] }
             }).select('_id')
 
             const runningProjectsIds = runningProjects.map(p => p._id)
 
-            // remove from any imcomplete issue he or she assigned
-            await Issues.updateMany(
-                {
-                    assignedTo: user.id,
-                    status: { $nin: ['closed', 'cancelled'] },
-                    project: { $in: runningProjectsIds }
-                },
-                { assignedTo: null }
-            )
+            if (runningProjectsIds.length > 0) {
+                // remove from any imcomplete issue he or she assigned
+                await Issues.updateMany(
+                    {
+                        assignedTo: user.id,
+                        status: { $nin: ['closed', 'cancelled'] },
+                        project: { $in: runningProjectsIds }
+                    },
+                    { assignedTo: null }
+                )
+            }
         }
 
         user.isActive = false;
@@ -301,7 +310,7 @@ const changeUserRole = catchAsync(
         if (!user.isActive) return next(new AppError(400, 'User is not active'));
 
         // If target user is teamLead
-        if (user.role === 'team_lead') {
+        if (user.role === 'team_lead' && role !== 'team_lead') {
             // set all of his team's teamlead null
             await Teams.updateMany(
                 { teamLead: user.id },
@@ -310,25 +319,38 @@ const changeUserRole = catchAsync(
         }
 
         // If taget user is member
-        if (user.role === 'member') {
-            // remove from any teams he or she belongs
+        if (user.role === 'member' && role !== 'member') {
+            // find all active teams he or she belongs
+            const allTeams = await Teams.find({ members: user.id, isActive: true })
+                .select('_id');
+
+            const allTeamsIds = allTeams.map(p => p._id);
+
+            // remove from all active teams he or she belongs
             await Teams.updateMany(
-                { members: user.id },
+                { _id: { $in: allTeamsIds } },
                 { $pull: { members: user.id } }
             );
 
-            // First find running projects
+            // First find all running projects of his or her teams
             const runningProjects = await Projects.find({
+                team: { $in: allTeamsIds },
                 status: { $nin: ['completed', 'cancelled', 'archived'] }
             }).select('_id')
 
             const runningProjectsIds = runningProjects.map(p => p._id)
 
-            // remove from any imcomplete issue he or she assigned
-            await Issues.updateMany(
-                { assignedTo: user.id, status: { $nin: ['closed', 'cancelled'] } },
-                { assignedTo: null }
-            )
+            if (runningProjectsIds.length > 0) {
+                // remove from any imcomplete issue he or she assigned
+                await Issues.updateMany(
+                    {
+                        assignedTo: user.id,
+                        status: { $nin: ['closed', 'cancelled'] },
+                        project: { $in: runningProjectsIds }
+                    },
+                    { assignedTo: null }
+                )
+            }
         }
 
         user.role = role;
