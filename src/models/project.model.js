@@ -21,9 +21,14 @@ const projectSchema = new mongoose.Schema({
         index: true
     },
     team: {
-        type: mongoose.Schema.ObjectId, 
-        ref: 'Team', 
+        type: mongoose.Schema.ObjectId,
+        ref: 'Team',
         required: [true, 'Team is required'],
+        index: true
+    },
+    createdBy: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
         index: true
     },
     dueDate: {

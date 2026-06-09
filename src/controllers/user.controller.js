@@ -1,5 +1,6 @@
 const Users = require('../models/user.model.js')
 const Teams = require('../models/team.model.js')
+const Projects = require('../models/project.model.js')
 const Issues = require('../models/issue.model.js')
 const catchAsync = require('../utils/catchAsync.js')
 const AppError = require("../utils/AppError.js");
@@ -218,15 +219,26 @@ const deleteUser = catchAsync(
 
         // If taget user is member
         if (user.role === 'member') {
-            // remove from any teams he or she belongs
+            // remove from any active teams he or she belongs
             await Teams.updateMany(
-                { members: user.id },
+                { members: user.id, isActive: true },
                 { $pull: { members: user.id } }
             );
 
+            // First find running projects
+            const runningProjects = await Projects.find({
+                status: { $nin: ['completed', 'cancelled', 'archived'] }
+            }).select('_id')
+
+            const runningProjectsIds = runningProjects.map(p => p._id)
+
             // remove from any imcomplete issue he or she assigned
             await Issues.updateMany(
-                { assignedTo: user.id, status: { $nin: ['closed', 'cancelled'] } },
+                {
+                    assignedTo: user.id,
+                    status: { $nin: ['closed', 'cancelled'] },
+                    project: { $in: runningProjectsIds }
+                },
                 { assignedTo: null }
             )
         }
@@ -292,7 +304,7 @@ const changeUserRole = catchAsync(
         if (user.role === 'team_lead') {
             // set all of his team's teamlead null
             await Teams.updateMany(
-                { teamLead: user.id},
+                { teamLead: user.id },
                 { teamLead: null }
             );
         }
@@ -304,6 +316,13 @@ const changeUserRole = catchAsync(
                 { members: user.id },
                 { $pull: { members: user.id } }
             );
+
+            // First find running projects
+            const runningProjects = await Projects.find({
+                status: { $nin: ['completed', 'cancelled', 'archived'] }
+            }).select('_id')
+
+            const runningProjectsIds = runningProjects.map(p => p._id)
 
             // remove from any imcomplete issue he or she assigned
             await Issues.updateMany(

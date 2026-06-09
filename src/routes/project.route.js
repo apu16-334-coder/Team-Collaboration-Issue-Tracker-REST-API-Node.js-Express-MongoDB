@@ -20,7 +20,7 @@ const router = require("express").Router();
 // POST /api/v1/projects      → create project
 // GET  /api/v1/projects     → get all projects
 router.route("/")
-    .post(restrictTo('admin', 'team_lead'), createProject)
+    .post(restrictTo('team_lead'), createProject)
     .get(restrictTo('admin'), getAllProjects)
 
 // admin/ team_lead/ member: get a particular project by id;
