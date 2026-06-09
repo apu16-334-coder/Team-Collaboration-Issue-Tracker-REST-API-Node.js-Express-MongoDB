@@ -265,7 +265,7 @@ const getProjectIssues = catchAsync(
         // execute query 
         const issues = await features.query.populate([
             { path: 'project', select: 'title' },
-            { path: 'assignedTo', select: 'name email' }
+            { path: 'assignedTo', select: 'name email isActive' }
         ]);
 
         // count total without pagination

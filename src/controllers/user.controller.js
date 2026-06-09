@@ -210,42 +210,42 @@ const deleteUser = catchAsync(
 
         // If target user is teamLead
         if (user.role === 'team_lead') {
-            // set all of his active team's teamlead null
+            // set all of his team's teamlead null
             await Teams.updateMany(
-                { teamLead: user.id, isActive: true },
+                { teamLead: user.id},
                 { teamLead: null }
             );
         }
 
         // If taget user is member
         if (user.role === 'member') {
-            // find all active teams he or she belongs
-            const allTeams = await Teams.find({ members: user.id, isActive: true })
+            // find all teams he or she belongs
+            const allTeams = await Teams.find({ members: user.id})
                 .select('_id');
 
             const allTeamsIds = allTeams.map(p => p._id);
 
-            // remove from all active teams he or she belongs
+            // remove from all teams he or she belongs
             await Teams.updateMany(
                 { _id: { $in: allTeamsIds } },
                 { $pull: { members: user.id } }
             );
 
             // First find all running projects of his or her teams
-            const runningProjects = await Projects.find({
+            const imcompleteProjects = await Projects.find({
                 team: { $in: allTeamsIds },
-                status: { $nin: ['completed', 'cancelled', 'archived'] }
+                status: { $nin: ['completed', 'archived'] }
             }).select('_id')
 
-            const runningProjectsIds = runningProjects.map(p => p._id)
+            const imcompleteProjectsIds = imcompleteProjects.map(p => p._id)
 
-            if (runningProjectsIds.length > 0) {
+            if (imcompleteProjectsIds.length > 0) {
                 // remove from any imcomplete issue he or she assigned
                 await Issues.updateMany(
                     {
                         assignedTo: user.id,
                         status: { $nin: ['closed', 'cancelled'] },
-                        project: { $in: runningProjectsIds }
+                        project: { $in: imcompleteProjectsIds }
                     },
                     { assignedTo: null }
                 )
@@ -320,33 +320,35 @@ const changeUserRole = catchAsync(
 
         // If taget user is member
         if (user.role === 'member' && role !== 'member') {
-            // find all active teams he or she belongs
-            const allTeams = await Teams.find({ members: user.id, isActive: true })
+            // find all teams he or she belongs
+            const allTeams = await Teams.find({ members: user.id})
                 .select('_id');
 
             const allTeamsIds = allTeams.map(p => p._id);
 
-            // remove from all active teams he or she belongs
+            console.log(allTeamsIds)
+
+            // remove from all teams he or she belongs
             await Teams.updateMany(
                 { _id: { $in: allTeamsIds } },
                 { $pull: { members: user.id } }
             );
 
             // First find all running projects of his or her teams
-            const runningProjects = await Projects.find({
+            const imcompleteProjects = await Projects.find({
                 team: { $in: allTeamsIds },
-                status: { $nin: ['completed', 'cancelled', 'archived'] }
+                status: { $nin: ['completed', 'archived'] }
             }).select('_id')
 
-            const runningProjectsIds = runningProjects.map(p => p._id)
+            const imcompleteProjectsIds = imcompleteProjects.map(p => p._id)
 
-            if (runningProjectsIds.length > 0) {
+            if (imcompleteProjectsIds.length > 0) {
                 // remove from any imcomplete issue he or she assigned
                 await Issues.updateMany(
                     {
                         assignedTo: user.id,
-                        status: { $nin: ['closed', 'cancelled'] },
-                        project: { $in: runningProjectsIds }
+                        status: { $nin: ['closed'] },
+                        project: { $in: imcompleteProjectsIds }
                     },
                     { assignedTo: null }
                 )

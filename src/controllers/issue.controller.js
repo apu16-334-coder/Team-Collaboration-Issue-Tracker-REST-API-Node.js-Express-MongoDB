@@ -81,7 +81,7 @@ const getAllIssues = catchAsync(
         // execute query 
         const issues = await features.query.populate([
             { path: 'project', select: 'title' },
-            { path: 'assignedTo', select: 'name email' }
+            { path: 'assignedTo', select: 'name email isActive' }
         ]);
 
         // count total without pagination
@@ -114,8 +114,10 @@ const getIssue = catchAsync(
                     path: 'project', select: 'title status', populate: {
                         path: 'team',
                         select: 'title teamLead members'
-                    }
-                }
+                    },
+                    
+                },
+                { path: 'assignedTo', select: 'name email isActive' }
             ]);
 
         if (!issue) return next(new AppError(404, 'issue is not found'));
@@ -261,7 +263,7 @@ const updateIssue = catchAsync(
             { returnDocument: 'after', runValidators: true }
         ).populate([
             { path: 'project', select: 'title team' },
-            { path: 'assignedTo', select: 'name email' }
+            { path: 'assignedTo', select: 'name email isActive' }
         ]);
 
         res.status(200).json({
