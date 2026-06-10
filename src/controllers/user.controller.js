@@ -282,13 +282,11 @@ const userReactivate = catchAsync(
     }
 )
 
-
 /**
  * changeUserRole
  * Admin-only: change user role
  * PATCH /api/v1/users/:id/change-role
  */
-
 const changeUserRole = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {

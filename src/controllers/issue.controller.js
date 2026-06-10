@@ -180,7 +180,7 @@ const updateIssue = catchAsync(
         if (issue.status === 'cancelled') {
             const errArray = req.user.role === 'member'
                 ? [404, 'issue is not found']
-                : [400, `Issue is ${issue.status}, re-open to update`];
+                : [400, `Issue is ${issue.status}`];
 
             return next(new AppError(errArray[0], errArray[1]));
         }

@@ -28,7 +28,7 @@ const createTeam = catchAsync(
             // Find teamLead user
             const lead = await Users.findById(filtered.teamLead).select('isActive role')
             if (!lead) return next(new AppError(404, 'Team_lead is not found'));
-            if (lead.role !== 'team_lead') return (400, 'Only user with role team_lead can assign as a lead in a team');
+            if (lead.role !== 'team_lead') return next(new AppError(400, 'Only user with role team_lead can assign as a lead in a team'));
             if (!lead.isActive) return next(new AppError(400, 'Team_lead is not active'));
         } else {
             return next(new AppError(400, 'teamLead is required'));
@@ -135,8 +135,11 @@ const getTeam = catchAsync(
             return next(new AppError(403, 'TeamLead can get his or her teams only'));
         }
 
+        // get all members of team
+        const teamMembersIds = team.members.map(m => m.id)
+
         // if logged user is not member of the team
-        if (req.user.role === 'member' && !team.members.includes(req.user.id)) {
+        if (req.user.role === 'member' && !teamMembersIds.includes(req.user.id)) {
             return next(new AppError(403, 'member can get his or her teams only'));
         }
 
