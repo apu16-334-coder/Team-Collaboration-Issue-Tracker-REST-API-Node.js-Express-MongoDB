@@ -160,6 +160,11 @@ const getUser = catchAsync(
 const updateUser = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
+        // find user
+        const user = await Users.findById(req.params.id)
+        if (!user) return next(new AppError(404, 'User is not found'));
+        if (!user.isActive) return next(new AppError(400, 'User is not active'));
+
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
@@ -171,11 +176,6 @@ const updateUser = catchAsync(
         if (req.user.id === req.params.id) {
             return next(new AppError(403, "Admin cannot update his own profile here. Use /api/v1/users/me instead."));
         }
-
-        // find user
-        const user = await Users.findById(req.params.id)
-        if (!user) return next(new AppError(404, 'User is not found'));
-        if (!user.isActive) return next(new AppError(400, 'User is not active'));
 
         const updatedUser = await Users.findByIdAndUpdate(
             user.id,
@@ -290,13 +290,6 @@ const userReactivate = catchAsync(
 const changeUserRole = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        // If request body is invalid
-        if (!req.body) return next(new AppError(400, 'Not valid request body'));
-
-        const { role } = req.body
-
-        if (!role) return next(new AppError(400, 'role is required'));
-
         // Prevent self-role change through this endpoint
         if (req.user.id === req.params.id) {
             return next(new AppError(400, 'Admin can not change his own role'));
@@ -306,6 +299,13 @@ const changeUserRole = catchAsync(
         const user = await Users.findById(req.params.id)
         if (!user) return next(new AppError(404, 'User is not found'));
         if (!user.isActive) return next(new AppError(400, 'User is not active'));
+
+        // If request body is invalid
+        if (!req.body) return next(new AppError(400, 'Not valid request body'));
+
+        // filtering allowed fields
+        const { role } = req.body
+        if (!role) return next(new AppError(400, 'role is required'));
 
         // If target user is teamLead
         if (user.role === 'team_lead' && role !== 'team_lead') {
@@ -371,13 +371,6 @@ const changeUserRole = catchAsync(
 const resetUserPassword = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        // If request body is invalid
-        if (!req.body) return next(new AppError(400, 'Not valid request body'));
-
-        const { password } = req.body;
-
-        if (!password) return next(new AppError(400, 'password is required'));
-
         // Prevent self-password reset through this endpoint
         if (req.user.id === req.params.id) {
             return next(new AppError(400, 'Admin can not reset his own password'));
@@ -387,6 +380,13 @@ const resetUserPassword = catchAsync(
         const user = await Users.findById(req.params.id)
         if (!user) return next(new AppError(404, 'User is not found'));
         if (!user.isActive) return next(new AppError(400, 'User is not active'));
+
+        // If request body is invalid
+        if (!req.body) return next(new AppError(400, 'Not valid request body'));
+
+        // getting password from request body
+        const { password } = req.body;
+        if (!password) return next(new AppError(400, 'password is required'));
 
         user.password = password; // plain password
         await user.save() // triggers pre("save") → hashing + passwordChangedAt

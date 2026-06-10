@@ -23,7 +23,6 @@ const projectSchema = new mongoose.Schema({
     team: {
         type: mongoose.Schema.ObjectId,
         ref: 'Team',
-        required: [true, 'Team is required'],
         index: true
     },
     createdBy: {

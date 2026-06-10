@@ -158,6 +158,11 @@ const getTeam = catchAsync(
 const updateTeam = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
+        // Find team
+        const team = await Teams.findById(req.params.id);
+        if (!team) return next(new AppError(404, 'Team is not found'));
+        if (!team.isActive) return next(new AppError(404, 'Team is not active'));
+
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
@@ -170,18 +175,11 @@ const updateTeam = catchAsync(
             const lead = await Users.findById(filtered.teamLead).select('isActive role')
 
             if (!lead) return next(new AppError(404, 'Team_lead is not found'));
-            console.log("yes teamLead");
 
-            if (lead.role !== 'team_lead') return next(new AppError(400, 'Only user with role team_lead can assign as a lead in a team'));
-            console.log("yes teamLead");
+            if (lead.role !== 'team_lead') return next(new AppError(400, 'Only user with  team_lead role can assign as a lead in a team'));
 
             if (!lead.isActive) return next(new AppError(400, 'Team_lead is not active'));    
         }
-
-        // Find team
-        const team = await Teams.findById(req.params.id);
-        if (!team) return next(new AppError(404, 'Team is not found'));
-        if (!team.isActive) return next(new AppError(404, 'Team is not active'));
 
         const updatedTeam = await Teams.findByIdAndUpdate(
             req.params.id,
@@ -210,13 +208,12 @@ const deleteTeam = catchAsync(
         // Find Team
         const team = await Teams.findById(req.params.id)
         if (!team) return next(new AppError(404, 'Team is not found'));
-
         if (!team.isActive) return next(new AppError(400, 'Team is already deactive'));
 
         // set status of all planning or active projects of this team to on_hold
         await Projects.updateMany(
             { team: team.id, status: { $in: ['planning', 'active' ] } },
-            { status: 'on_hold' }
+            { status: 'on_hold', team: null }
         )
 
         // set status of all completed projects of this team to archived

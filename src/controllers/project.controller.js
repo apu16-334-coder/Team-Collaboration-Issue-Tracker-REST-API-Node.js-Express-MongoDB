@@ -43,6 +43,8 @@ const createProject = catchAsync(
 
             // if team_lead create project for other's team
             if (req.user.role === 'team_lead' && team.teamLead.toString() !== req.user.id) return next(new AppError(400, 'TeamLead can create project only for his teams'));
+        }else {
+            return next(new AppError(400, 'Team is required'));
         }
 
         const project = await Projects.create(filtered);
