@@ -15,8 +15,8 @@ const mongoose = require('mongoose');
 
 /**
  * createComments
- * (Admin, team_lead, member): create a new comment
- * POST /api/v1/comments
+ * (team_lead, member): create a new comment
+ * // POST /api/v1/issues/:id/comments
  */
 const createComments = catchAsync(
     /** @type {RequestHandler} */
@@ -26,41 +26,43 @@ const createComments = catchAsync(
 
         const filtered = filterBody(req.body, 'text');
 
+        // set author and issue
         filtered.author = req.user.id;
-
         filtered.issue = req.params.id;
 
-        if (filtered.issue) {
-            const issue = await Issues.findById(filtered.issue)
-                .populate({
-                    path: 'project',
-                    select: 'title',
-                    populate: {
-                        path: 'team',
-                        select: 'title teamLead members'
-                    }
-                })
+        // find issue
+        const issue = await Issues.findById(filtered.issue)
+            .populate({
+                path: 'project',
+                select: 'title status',
+                populate: {
+                    path: 'team',
+                    select: 'title teamLead members'
+                }
+            })
 
-            if (!issue) return next(new AppError(404, 'issue is not found'));
+        if (!issue) return next(new AppError(404, 'issue is not found'));
 
-            // then if issue is cancelled
-            if (issue.status === 'cancelled') {
-                const errArray = req.user.role === 'member'
-                    ? [404, 'issue is not found']
-                    : [400, `issue is ${issue.status}`];
+        // If the project of the issue cancelled or archived 
+        if (issue.project.status === 'cancelled' || issue.project.status === 'archived') return next(new AppError(404, 'issue is not found'));
 
-                return next(new AppError(errArray[0], errArray[1]));
-            }
+        // then if issue is cancelled
+        if (issue.status === 'cancelled') {
+            const errArray = req.user.role === 'member'
+                ? [404, 'issue is not found']
+                : [400, `issue is ${issue.status}`];
 
-            // if logged user is not team lead of this issue project team
-            if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
-                return next(new AppError(403, 'Team lead can only comments in his or her teams projects issues'));
-            }
+            return next(new AppError(errArray[0], errArray[1]));
+        }
 
-            // if logged user is not member of this issue project team
-            if (req.user.role === 'member' && !issue.project.team.members.includes(req.user.id)) {
-                return next(new AppError(403, 'member can only comments in his or her teams projects issues'));
-            }
+        // if logged user is not team lead of this issue project team
+        if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
+            return next(new AppError(403, 'Team lead can only comments in his or her teams projects issues'));
+        }
+
+        // if logged user is not member of this issue project team
+        if (req.user.role === 'member' && !issue.project.team.members.includes(req.user.id)) {
+            return next(new AppError(403, 'member can only comments in his or her teams projects issues'));
         }
 
         const comment = await Comments.create(filtered);
@@ -93,10 +95,10 @@ const getIssueComments = catchAsync(
 
         if (!issue) return next(new AppError(404, 'issue is not found'));
 
-         // the if project of the issue is cancelled or archived
-        if(issue.project.status === 'cancelled' || issue.project.status === 'archived') {
+        // the if project of the issue is cancelled or archived
+        if (issue.project.status === 'cancelled' || issue.project.status === 'archived') {
             // If logged user is not admin
-            if(req.user.role !== 'member') return next(new AppError(404, 'issue is not found')); 
+            if (req.user.role !== 'admin') return next(new AppError(404, 'issue is not found'));
         }
 
         // then if issue is cancelled and logged user is member
@@ -161,19 +163,18 @@ const updateComment = catchAsync(
         if (!comment) return next(new AppError(404, 'comment is not found'));
 
         // If issue of the comment is cancelled
-        if(comment.issue.status === 'cancelled') {
+        if (comment.issue.status === 'cancelled') {
             const errAraay = req.user.role === "member"
                 ? [404, 'comment is not found'] // if logged user is member
                 : [400, 'Issue of the comment is cancelled']; // if not
+
+            return next(new AppError(errAraay[0], errAraay[1]))
         }
 
         // If project of the issue of the comment is cancelled or archived
-        if(comment.issue.project.status === 'cancelled' || comment.issue.project.status === 'archived') {
-            const errAraay = req.user.role !== "admin"
-                ? [404, 'comment is not found'] // if logged user is not admin
-                : [400, `project of the issue of the comment is ${comment.issue.project.status}`]; // if admin
-        }
+        if (comment.issue.project.status === 'cancelled' || comment.issue.project.status === 'archived') return next(new AppError(404, 'comment is not found'))
 
+        // If logged user is not the author of the comment
         if (comment.author.toString() !== req.user.id) return next(new AppError(403, 'Only author of comment can edit'));
 
         // If request body is invalid
@@ -199,7 +200,7 @@ const updateComment = catchAsync(
 
 /**
  * deleteComment
- * admin/ team_lead/ author: delete a comment
+ * team_lead/ member as author: delete a comment
  * DELETE /api/v1/teams/:id
  */
 const deleteComment = catchAsync(
@@ -223,26 +224,24 @@ const deleteComment = catchAsync(
         if (!comment) return next(new AppError(404, 'comment is not found'));
 
         // If issue of the comment is cancelled
-        if(comment.issue.status === 'cancelled') {
+        if (comment.issue.status === 'cancelled') {
             const errAraay = req.user.role === "member"
                 ? [404, 'comment is not found'] // if logged user is member
                 : [400, 'Issue of the comment is cancelled']; // if not
+
+            return next(new AppError(errAraay[0], errAraay[1]))
         }
 
         // If project of the issue of the comment is cancelled or archived
-        if(comment.issue.project.status === 'cancelled' || comment.issue.project.status === 'archived') {
-            const errAraay = req.user.role !== "admin"
-                ? [404, 'comment is not found'] // if logged user is not admin
-                : [400, `project of the issue of the comment is ${comment.issue.project.status}`]; // if admin
-        }
+        if (comment.issue.project.status === 'cancelled' || comment.issue.project.status === 'archived') return next(new AppError(404, 'comment is not found'))
 
-        // if logged user is not team lead of this comment issue project team or the author
-        if (comment.issue.project.team.teamLead.toString() !== req.user.id || comment.author.toString() !== req.user.id) {
-            return next(new AppError(403, 'Team lead can delete comment only of his or her teams projects issues or author can delete his or her comments'));
-        }
+        // if logged user is not team lead of this comment issue project team
+        if (req.user.role === 'team_lead' && comment.issue.project.team.teamLead.toString() !== req.user.id) return next(new AppError(403, 'Team lead can delete comment only of his or her teams projects issues'));
+
+        // If logged user is member but not author  
+        if (req.user.role === 'member' && comment.author.toString() !== req.user.id) return next(new AppError(403, 'member can only delete his or her comments'));
 
         await Comments.findByIdAndDelete(req.params.commentId);
-
         res.status(204).send();
     }
 )

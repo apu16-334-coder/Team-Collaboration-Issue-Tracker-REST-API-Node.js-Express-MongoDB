@@ -14,7 +14,7 @@ const mongoose = require('mongoose');
 
 /**
  * createProject
- * (Admin, team_lead): create a new prject
+ * team_lead only: create a new prject
  * POST /api/v1/projects
  */
 const createProject = catchAsync(
@@ -29,23 +29,16 @@ const createProject = catchAsync(
         if (filtered.team) {
             // find team
             const team = await Teams.findById(filtered.team).select('teamLead isActive');
-            if (!team) return next(new AppError(404, 'Team is not found'));
-
-            // If team is not active
-            if (!team.isActive) {
-                // if logged user is admin
-                const errAraay = req.user.role === 'admin'
-                    ? [400, 'Team is not active']
-                    : [404, 'Team is not found'];
-
-                return next(new AppError(errAraay[0], errAraay[1]));
-            }
+            if (!team || !team.isActive) return next(new AppError(404, 'Team is not found'));
 
             // if team_lead create project for other's team
             if (req.user.role === 'team_lead' && team.teamLead.toString() !== req.user.id) return next(new AppError(400, 'TeamLead can create project only for his teams'));
-        }else {
+        } else {
             return next(new AppError(400, 'Team is required'));
         }
+
+        // set logged user as createdBy 
+        filtered.createdBy = req.user.id;
 
         const project = await Projects.create(filtered);
 
@@ -71,7 +64,7 @@ const getAllProjects = catchAsync(
             .pagination()
 
         // execute query 
-        const projects = await features.query.populate('team', 'title');
+        const projects = await features.query.populate('team', 'title isActive');
 
         // count total without pagination
         const total = await Projects.countDocuments(features.getQueryObjForCount());
@@ -98,23 +91,35 @@ const getProject = catchAsync(
     async (req, res, next) => {
         // Find project
         const project = await Projects.findById(req.params.id)
-            .populate('team', 'title teamLead members');
+            .populate([
+                {
+                    path: 'team', select: 'title isActive teamLead members',
+                    populate: [
+                        { path: 'teamLead', select: 'name email isActive' },
+                        { path: 'members', select: 'name email isActive' },
+                    ]
+                },
+                { path: 'createdBy', select: 'name email isActive' },
+            ]);
 
         if (!project) return next(new AppError(404, 'project is not found'));
 
         // if logged user is not admin
         if (req.user.role !== 'admin') {
             // if project is cancelled or archived
-            if(project.status === 'archived' || project.status === 'cancelled') return next(new AppError(404, 'project is not found'));
+            if (project.status === 'archived' || project.status === 'cancelled') return next(new AppError(404, 'project is not found'));
         }
 
         // if logged user is not team lead of this project team
-        if (req.user.role === 'team_lead' && project.team.teamLead.toString() !== req.user.id) {
+        if (req.user.role === 'team_lead' && project.team.teamLead.id.toString() !== req.user.id) {
             return next(new AppError(403, 'Team lead can get his or her teams projects only'));
         }
 
+        // getting Ids of team members of project
+        const membersIds = project.team.members.map(m => m.id);
+
         // if logged user is not member of this project team
-        if (req.user.role === 'member' && !project.team.members.includes(req.user.id)) {
+        if (req.user.role === 'member' && !membersIds.includes(req.user.id)) {
             return next(new AppError(403, 'member can get his or her teams projects only'));
         }
 
@@ -140,16 +145,16 @@ const updateProject = catchAsync(
         // then if project is archived or cancelled
         if (project.status === 'archived' || project.status === 'cancelled') {
             // if logged user is not admin
-                const errAraay = req.user.role !== 'admin'
-                    ? [404, 'Project is not found']
-                    : [400, `Project is ${project.status}`];
+            const errAraay = req.user.role !== 'admin'
+                ? [404, 'Project is not found']
+                : [400, `Project is ${project.status}`];
 
-                return next(new AppError(errAraay[0], errAraay[1]));          
+            return next(new AppError(errAraay[0], errAraay[1]));
         }
 
         // if logged user is not team lead of the team of project
         if (req.user.role === 'team_lead' && project.team.teamLead.toString() !== req.user.id) return next(new AppError(403, 'Team lead can update his her teams projects only'));
-        
+
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
@@ -170,14 +175,8 @@ const updateProject = catchAsync(
             if (!team) return next(new AppError(404, 'Team is not found'));
 
             // If team is not active
-            if (!team.isActive) {
-                // if logged user is admin
-                const errAraay = req.user.role === 'admin'
-                    ? [400, 'Team is not active']
-                    : [404, 'Team is not found'];
+            if (!team.isActive) return next(new AppError(400, 'Team is not active'));
 
-                return next(new AppError(errAraay[0], errAraay[1]));
-            }
         }
 
         // if status is here
@@ -214,7 +213,7 @@ const deleteProject = catchAsync(
 
         if (project.status === 'archived' || project.status === 'cancelled') return next(new AppError(400, `project is already ${project.status}`));
 
-        if(project.status !== 'completed' && !req.query.force) return next(new AppError(400, 'Project is not complete yet'));
+        if (project.status !== 'completed' && !req.query.force) return next(new AppError(400, 'Project is not complete yet'));
 
         project.status = req.query.force && project.status !== 'completed'
             ? "cancelled"
@@ -242,7 +241,7 @@ const getProjectIssues = catchAsync(
         // if logged user is not admin
         if (req.user.role !== 'admin') {
             // if project is cancelled or archived
-            if(project.status === 'archived' || project.status === 'cancelled') return next(new AppError(404, 'project is not found'));
+            if (project.status === 'archived' || project.status === 'cancelled') return next(new AppError(404, 'project is not found'));
         }
 
         // if logged user is not team lead of this project team

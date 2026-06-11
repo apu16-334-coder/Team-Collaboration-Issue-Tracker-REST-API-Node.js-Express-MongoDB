@@ -80,7 +80,7 @@ const getAllIssues = catchAsync(
 
         // execute query 
         const issues = await features.query.populate([
-            { path: 'project', select: 'title' },
+            { path: 'project', select: 'title status' },
             { path: 'assignedTo', select: 'name email isActive' }
         ]);
 
@@ -115,9 +115,10 @@ const getIssue = catchAsync(
                         path: 'team',
                         select: 'title teamLead members'
                     },
-                    
+            
                 },
-                { path: 'assignedTo', select: 'name email isActive' }
+                { path: 'assignedTo', select: 'name email isActive' },
+                { path: 'createdBy', select: 'name email isActive' },
             ]);
 
         if (!issue) return next(new AppError(404, 'issue is not found'));
@@ -137,7 +138,7 @@ const getIssue = catchAsync(
         }
 
         // if logged user is not assigned to this issue
-        if (req.user.role === 'member' && !issue.project.team.members.includes()) {
+        if (req.user.role === 'member' && !issue.project.team.members.includes(req.user.id)) {
             return next(new AppError(403, 'Member can get his or her teams projects issues only'));
         }
 
@@ -150,7 +151,7 @@ const getIssue = catchAsync(
 
 /**
  * updateIssue
- * (admin, team_lead, member) : update a particular issue by id.(assignedTo member can update status only)
+ * (team_lead, member) : update a particular issue by id.(assignedTo member can update status only)
  * PATCH /api/v1/teams/:id
  */
 const updateIssue = catchAsync(
@@ -168,14 +169,8 @@ const updateIssue = catchAsync(
         if (!issue) return next(new AppError(404, 'issue is not found'));
 
         // If the project of the issue cancelled or archived 
-        if (issue.project.status === 'cancelled' || issue.project.status === 'archived') {
-            const errArray = req.user.role !== 'admin'
-                ? [404, 'issue is not found']
-                : [400, `Project of the issue is ${issue.project.status}`];
-
-            return next(new AppError(errArray[0], errArray[1]));
-        }
-
+        if (issue.project.status === 'cancelled' || issue.project.status === 'archived') return next(new AppError(404, 'issue is not found'));
+        
         // then if issue is cancelled
         if (issue.status === 'cancelled') {
             const errArray = req.user.role === 'member'
@@ -192,7 +187,7 @@ const updateIssue = catchAsync(
 
         // if logged user is not assigned to this issue
         if (req.user.role === 'member' && issue.assignedTo.toString() !== req.user.id) {
-            return next(new AppError(403, 'Member can update only the issues he or she is assigned'));
+            return next(new AppError(403, 'Member can update only the issues if he or she is assigned to this issue'));
         }
 
         // If request body is invalid
@@ -214,6 +209,8 @@ const updateIssue = catchAsync(
         const filtered = filterBody(req.body, ...allowedFields)
 
         if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
+
+        console.log(filtered)
 
         // check if project is here
         if (filtered.project) {
@@ -254,7 +251,7 @@ const updateIssue = catchAsync(
                 ? ['open', 'in_progress', 'done', 'in_review', 'closed']
                 : ['open', 'in_progress', 'done'];
             // the if status is not allowed
-            if (!allowedStatus.includes(filtered.status)) return next(new AppError(400, `${req.user.role} can only set status as ${allowedStatus.join(', ')}`))
+            if (!allowedStatus.includes(filtered.status)) return next(new AppError(400, `In this route, ${req.user.role} can only set status as ${allowedStatus.join(', ')}`))
         }
 
         const updatedIssue = await Issues.findByIdAndUpdate(
@@ -275,7 +272,7 @@ const updateIssue = catchAsync(
 
 /**
  * deleteIssue
- * admin/ team_lead: delete a particular issue by id
+ * team_lead only: delete a particular issue by id
  * DELETE /api/v1/issues/:id
  */
 const deleteIssue = catchAsync(
@@ -294,14 +291,9 @@ const deleteIssue = catchAsync(
         if (!issue) return next(new AppError(404, 'issue is not found'));
 
         // If the project of the issue cancelled or archived 
-        if (issue.project.status === 'cancelled' || issue.project.status === 'archived') {
-            const errArray = req.user.role !== 'admin'
-                ? [404, 'issue is not found']
-                : [400, `Project of the issue is ${issue.project.status}`];
-
-            return next(new AppError(errArray[0], errArray[1]));
-        }
-
+        if (issue.project.status === 'cancelled' || issue.project.status === 'archived') return next(new AppError(404, 'issue is not found'));
+        
+        // If issue is cancelled
         if (issue.status === 'cancelled') return next(new AppError(400, `issue is already cancelled`));
 
         // if logged user is not team lead of this issue project team

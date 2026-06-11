@@ -15,12 +15,12 @@ const {
 // Comment Routes
 // ----------------------
 
-// Admin, team_lead, member: Create new comment
+// team_lead, member: Create new comment
 // Admin, team_lead, member: get all comments of a issue
 // POST /api/v1/issues/:id/comments    →  create comments on a issue
 // GET /api/v1/issues/:id/comments    →  get comments of a issue
 router.route("/")
-    .post(createComments)
+    .post(restrictTo('team_lead', 'member'), createComments)
     .get(getIssueComments)
 
 // Author only: update a comment by it is id
@@ -28,7 +28,7 @@ router.route("/")
 // PATCH /api/v1/issues/:id/comments/:commentId    →  Update comment
 // DELETE /api/v1/issues/:id/comments/:commentId    →  delete comment
 router.route("/:commentId")
-    .patch(updateComment)
-    .delete(deleteComment)
+    .patch(restrictTo('team_lead', 'member'), updateComment)
+    .delete(restrictTo('team_lead', 'member'), deleteComment)
 
 module.exports = router;
