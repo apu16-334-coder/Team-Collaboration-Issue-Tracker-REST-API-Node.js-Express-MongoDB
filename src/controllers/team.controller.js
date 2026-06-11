@@ -59,8 +59,8 @@ const getAllTeams = catchAsync(
 
         // execute query 
         const teams = await features.query.populate([
-            { path: 'teamLead', select: 'name email' },
-            { path: 'members', select: 'name email' }
+            { path: 'teamLead', select: 'name email isActive' },
+            { path: 'members', select: 'name email isActive' }
         ]);
 
         // count total without pagination
@@ -123,8 +123,8 @@ const getTeam = catchAsync(
         // Find team
         const team = await Teams.findById(req.params.id)
             .populate([
-                { path: 'teamLead', select: 'name email' },
-                { path: 'members', select: 'name email' }
+                { path: 'teamLead', select: 'name email isActive' },
+                { path: 'members', select: 'name email isActive' }
             ]);
 
         if (!team) return next(new AppError(404, 'Team is not found'));
@@ -261,6 +261,11 @@ const teamReactivate = catchAsync(
 const addTeamMembers = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
+        // Find team
+        const team = await Teams.findById(req.params.id);
+        if (!team) return next(new AppError(404, 'Team is not found'));
+        if (!team.isActive) return next(new AppError(404, 'Team is not active'));
+
         // If request body has invalid input
         if (!req.body) return next(new AppError(400, 'Invaild request body'))
 
@@ -309,7 +314,7 @@ const addTeamMembers = catchAsync(
             return next(new AppError(400, errors.join(' | ')));
         }
 
-        const team = await Teams.findOneAndUpdate(
+        const updatedTeam = await Teams.findOneAndUpdate(
             { _id: req.params.id, isActive: true },
             { $addToSet: { members: { $each: members } } },
             { returnDocument: 'after', runValidators: true }
@@ -318,11 +323,9 @@ const addTeamMembers = catchAsync(
             { path: 'members', select: 'name email' }
         ])
 
-        if (!team) return next(new AppError(404, 'Team is not found'));
-
         res.status(200).json({
             success: true,
-            data: team
+            data: updatedTeam
         })
     }
 )
@@ -385,8 +388,11 @@ const getTeamProjects = catchAsync(
             return next(new AppError(403, 'TeamLead can get his or her teams projects only'));
         }
 
+        // get all members of team
+        const teamMembersIds = team.members.map(m => m.id)
+
         // if logged user is not member of the team
-        if (req.user.role === 'member' && !team.members.includes(req.user.id)) {
+        if (req.user.role === 'member' && !teamMembersIds.includes(req.user.id)) {
             return next(new AppError(403, 'member can get his or her teams projects only'));
         }
 
@@ -401,7 +407,7 @@ const getTeamProjects = catchAsync(
             .pagination()
 
         // execute query 
-        const projects = await features.query.populate('team', 'title');
+        const projects = await features.query.populate('team', 'title isActive');
 
         // count total without pagination
         const total = await Projects.countDocuments(features.getQueryObjForCount());

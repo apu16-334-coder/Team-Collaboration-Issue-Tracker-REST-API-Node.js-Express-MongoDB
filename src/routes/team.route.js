@@ -45,9 +45,8 @@ router.route("/:id")
 // PATCH /api.v1/teams/:id/reactivate → reactivate a team
 router.patch('/:id/reactivate', restrictTo('admin'), teamReactivate)
 
-// only admin: add or get members of a team by id
+// only admin: add members of a team by id
 // POST /api.v1/teams/:id/members → add member of a team
-// GET /api.v1/teams/:id/members → get members of a team
 router.post("/:id/members", restrictTo('admin'), addTeamMembers)
 
 // only admin: remove member of a team
