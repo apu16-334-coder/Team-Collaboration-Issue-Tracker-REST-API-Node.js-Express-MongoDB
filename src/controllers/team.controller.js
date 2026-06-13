@@ -132,12 +132,12 @@ const getTeam = catchAsync(
         if (!team.isActive && req.user.role !== 'admin') return next(new AppError(404, 'Team is not found'));
 
         // if logged user is not team lead of the team
-        if (req.user.role === 'team_lead' && team.teamLead.id.toString() !== req.user.id) {
+        if (req.user.role === 'team_lead' && team.teamLead?.id.toString() !== req.user.id) {
             return next(new AppError(403, 'TeamLead can get his or her teams only'));
         }
 
         // get all members of team
-        const teamMembersIds = team.members.map(m => m.id)
+        const teamMembersIds = team.members.map(m => m.id) 
 
         // if logged user is not member of the team
         if (req.user.role === 'member' && !teamMembersIds.includes(req.user.id)) {
@@ -360,7 +360,7 @@ const removeTeamMember = catchAsync(
             // remove from any imcomplete issue he or she assigned
             await Issues.updateMany(
                 {
-                    assignedTo: user.id,
+                    assignedTo: req.params.userId,
                     status: { $nin: ['cancelled'] },
                     project: { $in: runningProjectsIds }
                 },
@@ -405,7 +405,7 @@ const getTeamProjects = catchAsync(
         if (!team.isActive && req.user.role !== 'admin') return next(new AppError(404, 'Team is not found'));
 
         // if logged user is not team lead of the team
-        if (req.user.role === 'team_lead' && team.teamLead.id.toString() !== req.user.id) {
+        if (req.user.role === 'team_lead' && team.teamLead?.id.toString() !== req.user.id) {
             return next(new AppError(403, 'TeamLead can get his or her teams projects only'));
         }
 

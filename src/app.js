@@ -9,7 +9,7 @@ const userRouter = require('./routes/user.route.js')
 const teamRouter = require('./routes/team.route.js')
 const projectRouter = require('./routes/project.route.js')
 const issueRouter = require('./routes/issue.route.js')
-const { protect, restrictTo } = require("./middlewares/auth.middleware.js");
+const { protect } = require("./middlewares/auth.middleware.js");
 
 const app = express();
 

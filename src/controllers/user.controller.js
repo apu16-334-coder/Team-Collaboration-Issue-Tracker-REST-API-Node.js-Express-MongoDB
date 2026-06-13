@@ -61,7 +61,7 @@ const getAllUsers = catchAsync(
         const users = await features.query;
 
         // Passed customQueryObj with filter and search features to count total 
-        const total = await Users.countDocuments(features.customQueryObj);
+        const total = await Users.countDocuments(features.getQueryObjForCount());
 
         // Send response meta-data for pagination
         res.status(200).json({
@@ -160,8 +160,13 @@ const getUser = catchAsync(
 const updateUser = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
+        // Prevent self update through this endpoint
+        if (req.user.id === req.params.id) {
+            return next(new AppError(403, "Admin cannot update his own profile here. Use /api/v1/users/me instead."));
+        }
+
         // find user
-        const user = await Users.findById(req.params.id)
+        const user = await Users.findById(req.params.id);
         if (!user) return next(new AppError(404, 'User is not found'));
         if (!user.isActive) return next(new AppError(400, 'User is not active'));
 
@@ -171,11 +176,6 @@ const updateUser = catchAsync(
         const filtered = filterBody(req.body, 'name', 'email');
 
         if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
-
-        // Prevent self update through this endpoint
-        if (req.user.id === req.params.id) {
-            return next(new AppError(403, "Admin cannot update his own profile here. Use /api/v1/users/me instead."));
-        }
 
         const updatedUser = await Users.findByIdAndUpdate(
             user.id,
@@ -212,7 +212,7 @@ const deleteUser = catchAsync(
         if (user.role === 'team_lead') {
             // set all of his team's teamlead null
             await Teams.updateMany(
-                { teamLead: user.id},
+                { teamLead: user.id },
                 { teamLead: null }
             );
         }
@@ -220,35 +220,38 @@ const deleteUser = catchAsync(
         // If taget user is member
         if (user.role === 'member') {
             // find all teams he or she belongs
-            const allTeams = await Teams.find({ members: user.id})
+            const allTeams = await Teams.find({ members: user.id })
                 .select('_id');
 
             const allTeamsIds = allTeams.map(p => p._id);
 
-            // remove from all teams he or she belongs
-            await Teams.updateMany(
-                { _id: { $in: allTeamsIds } },
-                { $pull: { members: user.id } }
-            );
+            // if there is teams
+            if (allTeamsIds.length > 0) {
+                // remove from all teams he or she belongs
+                await Teams.updateMany(
+                    { _id: { $in: allTeamsIds } },
+                    { $pull: { members: user.id } }
+                );
 
-            // First find all running projects of his or her teams
-            const runningProjects = await Projects.find({
-                team: { $in: allTeamsIds },
-                status: { $nin: ['cancelled', 'archived'] }
-            }).select('_id')
+                // First find all running projects of his or her teams
+                const runningProjects = await Projects.find({
+                    team: { $in: allTeamsIds },
+                    status: { $nin: ['cancelled', 'archived'] }
+                }).select('_id')
 
-            const runningProjectsIds = runningProjects.map(p => p._id)
+                const runningProjectsIds = runningProjects.map(p => p._id)
 
-            if (runningProjectsIds.length > 0) {
-                // remove from any imcomplete issue he or she assigned
-                await Issues.updateMany(
-                    {
-                        assignedTo: user.id,
-                        status: { $nin: ['cancelled'] },
-                        project: { $in: runningProjectsIds }
-                    },
-                    { assignedTo: null }
-                )
+                if (runningProjectsIds.length > 0) {
+                    // remove from any imcomplete issue he or she assigned
+                    await Issues.updateMany(
+                        {
+                            assignedTo: user.id,
+                            status: { $nin: ['cancelled'] },
+                            project: { $in: runningProjectsIds }
+                        },
+                        { assignedTo: null }
+                    )
+                }
             }
         }
 
@@ -263,7 +266,6 @@ const deleteUser = catchAsync(
  * Admin-only: reactivate a user by id
  * PATCH /api/v1/users/:id/reactivate
  */
-
 const userReactivate = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
@@ -319,37 +321,37 @@ const changeUserRole = catchAsync(
         // If taget user is member
         if (user.role === 'member' && role !== 'member') {
             // find all teams he or she belongs
-            const allTeams = await Teams.find({ members: user.id})
+            const allTeams = await Teams.find({ members: user.id })
                 .select('_id');
 
             const allTeamsIds = allTeams.map(p => p._id);
 
-            console.log(allTeamsIds)
+            if (allTeamsIds.length > 0) {
+                // remove from all teams he or she belongs
+                await Teams.updateMany(
+                    { _id: { $in: allTeamsIds } },
+                    { $pull: { members: user.id } }
+                );
 
-            // remove from all teams he or she belongs
-            await Teams.updateMany(
-                { _id: { $in: allTeamsIds } },
-                { $pull: { members: user.id } }
-            );
+                // First find all running projects of his or her teams
+                const runningProjects = await Projects.find({
+                    team: { $in: allTeamsIds },
+                    status: { $nin: ['cancelled', 'archived'] }
+                }).select('_id')
 
-            // First find all running projects of his or her teams
-            const runningProjects = await Projects.find({
-                team: { $in: allTeamsIds },
-                status: { $nin: ['cancelled', 'archived'] }
-            }).select('_id')
+                const runningProjectsIds = runningProjects.map(p => p._id)
 
-            const runningProjectsIds = runningProjects.map(p => p._id)
-
-            if (runningProjectsIds.length > 0) {
-                // remove from any imcomplete issue he or she assigned
-                await Issues.updateMany(
-                    {
-                        assignedTo: user.id,
-                        status: { $nin: ['cancelled'] },
-                        project: { $in: runningProjectsIds }
-                    },
-                    { assignedTo: null }
-                )
+                if (runningProjectsIds.length > 0) {
+                    // remove from any imcomplete issue he or she assigned
+                    await Issues.updateMany(
+                        {
+                            assignedTo: user.id,
+                            status: { $nin: ['cancelled'] },
+                            project: { $in: runningProjectsIds }
+                        },
+                        { assignedTo: null }
+                    )
+                }
             }
         }
 

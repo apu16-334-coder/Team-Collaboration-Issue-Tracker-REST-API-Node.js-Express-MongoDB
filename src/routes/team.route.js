@@ -27,34 +27,34 @@ router.route("/")
     .get(restrictTo('admin'), getAllTeams)
 
 // Only team_lead: Team_lead get his teams
-// GET /api.v1/teams/my → get teams of team_lead
+// GET /api/v1/teams/my → get teams of team_lead
 router.get('/my', restrictTo('team_lead'), getMyTeams);
 
 // (admin | team_lead of team | members of team): get a particular team by id
 // admin only: update a particular team title/ description/ team_lead by id
 // only admin: delete a team by id
-// GET /api.v1/teams/:id → get a team
-// PATCH /api.v1/teams/:id → update a team
-// DELETE /api.v1/teams/:id → delete a team
+// GET /api/v1/teams/:id → get a team
+// PATCH /api/v1/teams/:id → update a team
+// DELETE /api/v1/teams/:id → delete a team
 router.route("/:id")
     .get(getTeam)
     .patch(restrictTo('admin'), updateTeam)
     .delete(restrictTo('admin'), deleteTeam)
 
 // only admin: reactivate a team by id
-// PATCH /api.v1/teams/:id/reactivate → reactivate a team
+// PATCH /api/v1/teams/:id/reactivate → reactivate a team
 router.patch('/:id/reactivate', restrictTo('admin'), teamReactivate)
 
 // only admin: add members of a team by id
-// POST /api.v1/teams/:id/members → add member of a team
+// POST /api/v1/teams/:id/members → add member of a team
 router.post("/:id/members", restrictTo('admin'), addTeamMembers)
 
 // only admin: remove member of a team
-// DELETE /api.v1/teams/:id/members/:userId 
+// DELETE /api/v1/teams/:id/members/:userId 
 router.delete('/:id/members/:userId', restrictTo('admin'), removeTeamMember)
 
 // admin/ team_lead/ member: get projects of a team
-// GET /api.v1/teams/:id/projects
+// GET /api/v1/teams/:id/projects
 router.get('/:id/projects', getTeamProjects)
 
 module.exports = router;

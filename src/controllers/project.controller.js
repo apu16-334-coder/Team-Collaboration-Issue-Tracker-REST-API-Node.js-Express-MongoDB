@@ -32,7 +32,7 @@ const createProject = catchAsync(
             if (!team || !team.isActive) return next(new AppError(404, 'Team is not found'));
 
             // if team_lead create project for other's team
-            if (req.user.role === 'team_lead' && team.teamLead.toString() !== req.user.id) return next(new AppError(400, 'TeamLead can create project only for his teams'));
+            if (req.user.role === 'team_lead' && team.teamLead?.toString() !== req.user.id) return next(new AppError(400, 'TeamLead can create project only for his teams'));
         } else {
             return next(new AppError(400, 'Team is required'));
         }
@@ -111,12 +111,12 @@ const getProject = catchAsync(
         }
 
         // if logged user is not team lead of this project team
-        if (req.user.role === 'team_lead' && project.team.teamLead.id.toString() !== req.user.id) {
+        if (req.user.role === 'team_lead' && project.team?.teamLead?.id.toString() !== req.user.id) {
             return next(new AppError(403, 'Team lead can get his or her teams projects only'));
         }
-
+ 
         // getting Ids of team members of project
-        const membersIds = project.team.members.map(m => m.id);
+        const membersIds = project.team?.members.map(m => m.id) ?? [];
 
         // if logged user is not member of this project team
         if (req.user.role === 'member' && !membersIds.includes(req.user.id)) {
@@ -153,7 +153,7 @@ const updateProject = catchAsync(
         }
 
         // if logged user is not team lead of the team of project
-        if (req.user.role === 'team_lead' && project.team.teamLead.toString() !== req.user.id) return next(new AppError(403, 'Team lead can update his her teams projects only'));
+        if (req.user.role === 'team_lead' && project.team?.teamLead?.toString() !== req.user.id) return next(new AppError(403, 'Team lead can update his her teams projects only'));
 
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
@@ -171,12 +171,11 @@ const updateProject = catchAsync(
         // check if team is here
         if (filtered.team) {
             // find team
-            const team = await Teams.findById(filtered.team).select('teamLead isActive');
+            const team = await Teams.findById(filtered.team).select('isActive');
             if (!team) return next(new AppError(404, 'Team is not found'));
 
             // If team is not active
             if (!team.isActive) return next(new AppError(400, 'Team is not active'));
-
         }
 
         // if status is here
@@ -245,12 +244,12 @@ const getProjectIssues = catchAsync(
         }
 
         // if logged user is not team lead of this project team
-        if (req.user.role === 'team_lead' && project.team.teamLead.toString() !== req.user.id) {
+        if (req.user.role === 'team_lead' && project.team?.teamLead?.toString() !== req.user.id) {
             return next(new AppError(403, 'Team lead can get his or her teams projects issues only'));
         }
 
         // if logged user is not member of this project team
-        if (req.user.role === 'member' && !project.team.members.includes(req.user.id)) {
+        if (req.user.role === 'member' && !project.team?.members.includes(req.user.id)) {
             return next(new AppError(403, 'member can get his or her teams projects issues only'));
         }
 

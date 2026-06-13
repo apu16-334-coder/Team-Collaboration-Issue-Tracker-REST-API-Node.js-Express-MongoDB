@@ -20,7 +20,6 @@ const globalErrorHandler = (err, req, res, next) => {
     if (err.name === "CastError") {
         err.status = 400;
         err.message = "Invalid Id: " + err.message.slice(err.message.search('value'))
-        console.log(err)
     }
 
     // MongoDB duplicate key error (unique constraint)

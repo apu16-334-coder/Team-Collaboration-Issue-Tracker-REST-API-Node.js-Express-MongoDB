@@ -56,12 +56,12 @@ const createComments = catchAsync(
         }
 
         // if logged user is not team lead of this issue project team
-        if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
+        if (req.user.role === 'team_lead' && issue.project.team?.teamLead?.toString() !== req.user.id) {
             return next(new AppError(403, 'Team lead can only comments in his or her teams projects issues'));
         }
 
         // if logged user is not member of this issue project team
-        if (req.user.role === 'member' && !issue.project.team.members.includes(req.user.id)) {
+        if (req.user.role === 'member' && !issue.project.team?.members.includes(req.user.id)) {
             return next(new AppError(403, 'member can only comments in his or her teams projects issues'));
         }
 
@@ -105,12 +105,12 @@ const getIssueComments = catchAsync(
         if (issue.status === 'cancelled' && req.user.role === 'member') return next(new AppError(404, 'issue is not found'));
 
         // if logged user is not team lead of this issue project team
-        if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
+        if (req.user.role === 'team_lead' && issue.project.team?.teamLead?.toString() !== req.user.id) {
             return next(new AppError(403, 'Team lead can only get comments of his teams projects issues'));
         }
 
         // if logged user is not member of this issue project team
-        if (req.user.role === 'member' && !issue.project.team.members.includes(req.user.id)) {
+        if (req.user.role === 'member' && !issue.project.team?.members.includes(req.user.id)) {
             return next(new AppError(403, 'members can only get comments of his teams projects issues'));
         }
 
@@ -201,7 +201,7 @@ const updateComment = catchAsync(
 /**
  * deleteComment
  * team_lead/ member as author: delete a comment
- * DELETE /api/v1/teams/:id
+ * DELETE /api/v1/issues/:id/comments/:commentId
  */
 const deleteComment = catchAsync(
     /** @type {RequestHandler} */
@@ -236,7 +236,7 @@ const deleteComment = catchAsync(
         if (comment.issue.project.status === 'cancelled' || comment.issue.project.status === 'archived') return next(new AppError(404, 'comment is not found'))
 
         // if logged user is not team lead of this comment issue project team
-        if (req.user.role === 'team_lead' && comment.issue.project.team.teamLead.toString() !== req.user.id) return next(new AppError(403, 'Team lead can delete comment only of his or her teams projects issues'));
+        if (req.user.role === 'team_lead' && comment.issue.project.team?.teamLead?.toString() !== req.user.id) return next(new AppError(403, 'Team lead can delete comment only of his or her teams projects issues'));
 
         // If logged user is member but not author  
         if (req.user.role === 'member' && comment.author.toString() !== req.user.id) return next(new AppError(403, 'member can only delete his or her comments'));

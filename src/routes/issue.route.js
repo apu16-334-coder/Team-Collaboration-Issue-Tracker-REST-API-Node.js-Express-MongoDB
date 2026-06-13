@@ -30,9 +30,9 @@ router.route("/")
 // admin/ team_lead/ member: get a particular issue by id;
 // team_lead/ member: update a particular issue by id;
 // team_lead only: delete a particular issue by id;
-// GET /api.v1/issues/:id → get a project
-// PATCH /api.v1/issues/:id → update a project
-// DELETE /api.v1/issues/:id → delete a project
+// GET /api/v1/issues/:id → get a project
+// PATCH /api/v1/issues/:id → update a project
+// DELETE /api/v1/issues/:id → delete a project
 router.route("/:id")
     .get(getIssue)
     .patch(restrictTo('team_lead', 'member'), updateIssue)

@@ -34,10 +34,10 @@ const createIssue = catchAsync(
             if (!project || project.status === 'archived' || project.status === 'cancelled') return next(new AppError(404, 'Project is not found'));
 
             // if logged user is team lead but not of selected project team
-            if (req.user.role === 'team_lead' && project.team.teamLead?.toString() !== req.user.id) return next(new AppError(403, 'Team lead can create issue only for his project'));
+            if (req.user.role === 'team_lead' && project.team?.teamLead?.toString() !== req.user.id) return next(new AppError(403, 'Team lead can create issue only for his project'));
 
             // if logged user is member but not of selected project team
-            if (req.user.role === 'member' && !project.team.members?.includes(req.user.id)) {
+            if (req.user.role === 'member' && !project.team?.members.includes(req.user.id)) {
                 return next(new AppError(403, 'Member can create issue only for his project'));
             }
 
@@ -47,7 +47,7 @@ const createIssue = catchAsync(
                 if (req.user.role === 'member' && filtered.assignedTo.toString() !== req.user.id) return next(new AppError(400, 'Member can assigned issue only to himself or herself'));
 
                 // Team lead can assign only the team member of selected project
-                if (!project?.team.members.includes(filtered.assignedTo)) {
+                if (!project.team?.members.includes(filtered.assignedTo)) {
                     return next(new AppError(400, 'Only team member of selected project can assign for issue'));
                 }
             }
@@ -133,12 +133,12 @@ const getIssue = catchAsync(
         if (issue.status === 'cancelled' && req.user.role === 'member') return next(new AppError(404, 'issue is not found'));
 
         // if logged user is not team lead of this issue project team
-        if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
+        if (req.user.role === 'team_lead' && issue.project.team?.teamLead?.toString() !== req.user.id) {
             return next(new AppError(403, 'Team lead can get his or her teams projects issues only'));
         }
 
         // if logged user is not assigned to this issue
-        if (req.user.role === 'member' && !issue.project.team.members.includes(req.user.id)) {
+        if (req.user.role === 'member' && !issue.project.team?.members.includes(req.user.id)) {
             return next(new AppError(403, 'Member can get his or her teams projects issues only'));
         }
 
@@ -181,12 +181,12 @@ const updateIssue = catchAsync(
         }
 
         // if logged user is not team lead of this issue project team
-        if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
+        if (req.user.role === 'team_lead' && issue.project.team?.teamLead?.toString() !== req.user.id) {
             return next(new AppError(403, 'Team lead can update only his or her teams projects issues'));
         }
 
         // if logged user is not assigned to this issue
-        if (req.user.role === 'member' && issue.assignedTo.toString() !== req.user.id) {
+        if (req.user.role === 'member' && issue.assignedTo?.toString() !== req.user.id) {
             return next(new AppError(403, 'Member can update only the issues if he or she is assigned to this issue'));
         }
 
@@ -201,7 +201,7 @@ const updateIssue = catchAsync(
             allowedFields = ['title', 'description', 'status', 'priority', 'type', 'project', 'assignedTo'];
         } else if (req.user.id === issue.createdBy.toString()) {
             allowedFields = ['title', 'description', 'status', 'priority', 'type', 'project'];
-        } else if (req.user.id === issue.assignedTo.toString()) {
+        } else if (req.user.id === issue.assignedTo?.toString()) {
             allowedFields = ['status']
         }
 
@@ -209,8 +209,6 @@ const updateIssue = catchAsync(
         const filtered = filterBody(req.body, ...allowedFields)
 
         if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
-
-        console.log(filtered)
 
         // check if project is here
         if (filtered.project) {
@@ -221,26 +219,23 @@ const updateIssue = catchAsync(
             if (!project || project.status === 'archived' || project.status === 'cancelled') return next(new AppError(404, 'Project is not found'));
 
             // if logged user is team lead but not of selected project team
-            if (req.user.role === 'team_lead' && project.team.teamLead?.toString() !== req.user.id) return next(new AppError(403, 'Team lead can add issue only to his projects'));
+            if (req.user.role === 'team_lead' && project.team?.teamLead?.toString() !== req.user.id) return next(new AppError(403, 'Team lead can add issue only to his projects'));
 
             // if logged user is member but not of selected project team
-            if (req.user.role === 'member' && !project.team.members?.includes(req.user.id)) {
+            if (req.user.role === 'member' && !project.team?.members.includes(req.user.id)) {
                 return next(new AppError(403, 'Member can add issue only those projects he or she belongs'));
             }
 
             // if assigned to is there
             if (filtered.assignedTo) {
                 // Team lead can assign only the team member of selected project
-                if (!project?.team.members.includes(filtered.assignedTo)) {
+                if (!project.team?.members.includes(filtered.assignedTo)) {
                     return next(new AppError(400, 'Only team member of selected project can assign for issue'));
                 }
             }
-        }
-
-        // if assigned to is there
-        if (filtered.assignedTo) {
+        } else if (filtered.assignedTo) { // if only assignedTo is there
             // Team lead can assign only the team member of selected project
-            if (!issue.project.team.members.includes(filtered.assignedTo)) {
+            if (!issue.project.team?.members.includes(filtered.assignedTo)) {
                 return next(new AppError(400, 'Only team member of selected project can assign for issue'));
             }
         }
@@ -297,7 +292,7 @@ const deleteIssue = catchAsync(
         if (issue.status === 'cancelled') return next(new AppError(400, `issue is already cancelled`));
 
         // if logged user is not team lead of this issue project team
-        if (req.user.role === 'team_lead' && issue.project.team.teamLead.toString() !== req.user.id) {
+        if (req.user.role === 'team_lead' && issue.project.team?.teamLead?.toString() !== req.user.id) {
             return next(new AppError(403, 'Team lead can delete only his her teams projects issues'));
         }
 
