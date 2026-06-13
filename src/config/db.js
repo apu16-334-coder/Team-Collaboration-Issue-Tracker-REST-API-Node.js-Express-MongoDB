@@ -15,7 +15,7 @@ const connectDB = async function () {
         await mongoose.connect(DB);
 
         // For debugging
-        mongoose.set('debug', true); // ← HERE
+        if (process.env.NODE_ENV === 'development') mongoose.set('debug', true);
 
         // Log success (only for development/debugging)
         console.log('DB connected');

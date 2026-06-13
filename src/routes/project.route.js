@@ -15,7 +15,7 @@ const router = require("express").Router();
 // Project Routes
 // ----------------------
 
-// Admin, team_lead: Create new project
+// team_lead: Create new project
 // Admin: get all projects
 // POST /api/v1/projects      → create project
 // GET  /api/v1/projects     → get all projects

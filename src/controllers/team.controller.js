@@ -1,5 +1,6 @@
 const Teams = require("../models/team.model.js")
 const Projects = require("../models/project.model.js")
+const Issues = require("../models/issue.model.js")
 const Users = require("../models/user.model.js")
 const catchAsync = require('../utils/catchAsync.js')
 const AppError = require("../utils/AppError.js");
@@ -178,7 +179,7 @@ const updateTeam = catchAsync(
 
             if (lead.role !== 'team_lead') return next(new AppError(400, 'Only user with  team_lead role can assign as a lead in a team'));
 
-            if (!lead.isActive) return next(new AppError(400, 'Team_lead is not active'));    
+            if (!lead.isActive) return next(new AppError(400, 'Team_lead is not active'));
         }
 
         const updatedTeam = await Teams.findByIdAndUpdate(
@@ -212,13 +213,13 @@ const deleteTeam = catchAsync(
 
         // set status of all planning or active projects of this team to on_hold
         await Projects.updateMany(
-            { team: team.id, status: { $in: ['planning', 'active' ] } },
+            { team: team.id, status: { $in: ['planning', 'active'] } },
             { status: 'on_hold', team: null }
         )
 
         // set status of all completed projects of this team to archived
         await Projects.updateMany(
-            { team: team.id, status: 'completed'},
+            { team: team.id, status: 'completed' },
             { status: 'archived' }
         )
 
@@ -345,6 +346,26 @@ const removeTeamMember = catchAsync(
 
         if (!team.members.includes(req.params.userId)) {
             return next(new AppError(404, 'User is not a member of this team'));
+        }
+
+        // First find all running projects of his or her teams
+        const runningProjects = await Projects.find({
+            team: team.id,
+            status: { $nin: ['cancelled', 'archived'] }
+        }).select('_id')
+
+        const runningProjectsIds = runningProjects.map(p => p._id)
+
+        if (runningProjectsIds.length > 0) {
+            // remove from any imcomplete issue he or she assigned
+            await Issues.updateMany(
+                {
+                    assignedTo: user.id,
+                    status: { $nin: ['cancelled'] },
+                    project: { $in: runningProjectsIds }
+                },
+                { assignedTo: null }
+            )
         }
 
         const updatedTeam = await Teams.findByIdAndUpdate(

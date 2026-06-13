@@ -24,7 +24,7 @@ router.route("/")
     .get(getIssueComments)
 
 // Author only: update a comment by it is id
-// Author/ team_lead/ admin: delete a comment by it is id
+// team_lead/ member: delete a comment by it is id
 // PATCH /api/v1/issues/:id/comments/:commentId    →  Update comment
 // DELETE /api/v1/issues/:id/comments/:commentId    →  delete comment
 router.route("/:commentId")
