@@ -276,3 +276,18 @@ All controllers use a `filterBody()` utility that whitelists allowed fields befo
 
 **Centralized error handling**
 All async errors are caught by a `catchAsync` wrapper and forwarded to a single global error handler, which normalizes Mongoose validation errors, cast errors, and duplicate key errors into consistent API responses.
+
+## Postman Collection
+
+A ready-to-use Postman collection is included to test all endpoints.
+
+**Location:** `postman/Team-Collaboration-Issue-Tracker-API.postman_collection.json`
+
+### How to use
+
+1. Open Postman
+2. Click **Import** → **File**
+3. Select the JSON file from the `postman/` folder
+4. Set the `baseUrl` variable to either(optional):
+   - `http://localhost:3000/api/v1` (local)
+5. Run `/auth/login` first to get a token, then set it as the `token` variable for authenticated routes(optional)

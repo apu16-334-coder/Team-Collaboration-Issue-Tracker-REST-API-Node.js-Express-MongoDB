@@ -1,0 +1,1505 @@
+{
+  "info": {
+    "_postman_id": "693c117a-1fd7-4203-a12b-b5580ebf32b2",
+    "name": "Team-Collaboration-Issue-Tracker-API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "53827795",
+    "_collection_link": "https://go.postman.co/collection/53827795-693c117a-1fd7-4203-a12b-b5580ebf32b2?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Sign Up",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"name\": \"Misir Ali\",\r\n    \"email\": \"misir@gmail.com\",\r\n    \"password\": \"1234567890misir\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/auth/signup",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "signup"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Log In",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"email\": \"rifat@gmail.com\",\r\n    \"password\": \"1234567890rifat\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/auth/login",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Log Out",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MDMyMTk0MSwiZXhwIjoxNzgwNzUzOTQxfQ.hTGeQiNFoTJz2PPR6rjBQgzUxFw6XNFlHM81obvPtzQ",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/v1/auth/logout",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "logout"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Change Password",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMjQwZGFkNWY4ZTE4ZDJkNWM1ODU1NCIsImlhdCI6MTc4MDc0OTgyNywiZXhwIjoxNzgxMTgxODI3fQ.oYYFqip6Q81PkDJI5rz0Av4XG7KtrD_tldGA20Y3j9Q",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"currentPassword\": \"1234567890Misir\",\r\n    \"newPassword\": \"1234567890misir\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/auth/change-password",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "change-password"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create User",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MDMyMTk0MSwiZXhwIjoxNzgwNzUzOTQxfQ.hTGeQiNFoTJz2PPR6rjBQgzUxFw6XNFlHM81obvPtzQ",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"name\": \"Abu Taher\",\r\n    \"email\": \"taher@gmail.com\",\r\n    \"password\": \"1234567890taher\",\r\n    \"isActive\": \"false\",\r\n    \"role\": \"team_lead\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/users/",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "users",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Users",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MDc1NDAwMiwiZXhwIjoxNzgxMTg2MDAyfQ.ay1VHA7HSv74GIUVJHg115tP90T4oZdvrRn4T00H-2Y",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/v1/users/?role=member",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "users",
+            ""
+          ],
+          "query": [
+            {
+              "key": "role",
+              "value": "member",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Me",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDljMTQ4M2RiZDFhNGE4ZjliMSIsImlhdCI6MTc4MTA5ODY2OSwiZXhwIjoxNzgxODc2MjY5fQ.0SkLc-GkjulHRYYITPJa4FHL0v_mpI5grgb179QVflo",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"title\": \"Team B\",\r\n    \"teamLead\": \"69f38373c0b0fe7c632763ac\"\r\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/users/me",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "me"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update Me",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMjQwZGFkNWY4ZTE4ZDJkNWM1ODU1NCIsImlhdCI6MTc4MDc0OTg3OSwiZXhwIjoxNzgxMTgxODc5fQ.dRuCzs79PT3a6CUEVxbmB4vR6MyIT51fJTHQl9GbKV8",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"email\": \"misirali@gmail.com\",\r\n    \"role\": \"admin\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/users/me",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "me"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get User",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDljMTQ4M2RiZDFhNGE4ZjliMSIsImlhdCI6MTc4MDMyMjA2NiwiZXhwIjoxNzgwNzU0MDY2fQ.L9Bo7SVYXPIaan8SIs4xjUnjxx47nQPNGerKtlpdiJc",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/v1/users/6a240dad5f8e18d2d5c58554",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "6a240dad5f8e18d2d5c58554"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update User",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MDMyMTk0MSwiZXhwIjoxNzgwNzUzOTQxfQ.hTGeQiNFoTJz2PPR6rjBQgzUxFw6XNFlHM81obvPtzQ",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"email\": \"misir@gmail.com\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/users/6a240dad5f8e18d2d5c58554",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "6a240dad5f8e18d2d5c58554"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete User",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MDc1NDAwMiwiZXhwIjoxNzgxMTg2MDAyfQ.ay1VHA7HSv74GIUVJHg115tP90T4oZdvrRn4T00H-2Y",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/v1/users/69f0cd9c1483dbd1a4a8f9b1",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "69f0cd9c1483dbd1a4a8f9b1"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "User Reactivate",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MDc1NDAwMiwiZXhwIjoxNzgxMTg2MDAyfQ.ay1VHA7HSv74GIUVJHg115tP90T4oZdvrRn4T00H-2Y",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/v1/users/69f0cd9c1483dbd1a4a8f9b1/reactivate",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "69f0cd9c1483dbd1a4a8f9b1",
+            "reactivate"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Change User Role",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MDc1NDAwMiwiZXhwIjoxNzgxMTg2MDAyfQ.ay1VHA7HSv74GIUVJHg115tP90T4oZdvrRn4T00H-2Y",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"role\": \"member\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/users/69f0cd9c1483dbd1a4a8f9b1/change-role",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "69f0cd9c1483dbd1a4a8f9b1",
+            "change-role"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Reset Password",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MTA5ODU2NiwiZXhwIjoxNzgxODc2MTY2fQ.-R66iLuWhiEHPnYkVpzB32QcloGfZto5U6djrMM5J24",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"password\": \"1234567890sada\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/users/6a1e50edb48e2980852d4a1d/reset-password",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "6a1e50edb48e2980852d4a1d",
+            "reset-password"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Team",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MTA5ODU2NiwiZXhwIjoxNzgxODc2MTY2fQ.-R66iLuWhiEHPnYkVpzB32QcloGfZto5U6djrMM5J24",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"title\": \"Team Green\",\r\n    \"teamLead\": \"69f0cd471483dbd1a4a8f9ab\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/teams/",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "teams",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Teams",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MDc1NDAwMiwiZXhwIjoxNzgxMTg2MDAyfQ.ay1VHA7HSv74GIUVJHg115tP90T4oZdvrRn4T00H-2Y",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/teams/",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "teams",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get My Teams",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDQ3MTQ4M2RiZDFhNGE4ZjlhYiIsImlhdCI6MTc4MTA5ODYzOCwiZXhwIjoxNzgxODc2MjM4fQ.JAj7lcS3iVLWLuPBqHLOTsTPLGxfMmhggh4UR86hGbw",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"title\": \"Team B\",\r\n    \"teamLead\": \"69f38373c0b0fe7c632763ac\"\r\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/teams/my",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "teams",
+            "my"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Team",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDljMTQ4M2RiZDFhNGE4ZjliMSIsImlhdCI6MTc4MTA5ODY2OSwiZXhwIjoxNzgxODc2MjY5fQ.0SkLc-GkjulHRYYITPJa4FHL0v_mpI5grgb179QVflo",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/teams/6a11ef0d2070e5ea3de4941b",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "teams",
+            "6a11ef0d2070e5ea3de4941b"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update Team",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MDc1NDAwMiwiZXhwIjoxNzgxMTg2MDAyfQ.ay1VHA7HSv74GIUVJHg115tP90T4oZdvrRn4T00H-2Y",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"title\": \"Team E\",\r\n    \"teamLead\": \"69f0cd471483dbd1a4a8f9ab\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/teams/6a1482830ae91bf237acdf4a",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "teams",
+            "6a1482830ae91bf237acdf4a"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Team",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MDc1NDAwMiwiZXhwIjoxNzgxMTg2MDAyfQ.ay1VHA7HSv74GIUVJHg115tP90T4oZdvrRn4T00H-2Y",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/teams/6a149bbb7f46a73f21cdd730",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "teams",
+            "6a149bbb7f46a73f21cdd730"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Team Reactivate",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MDc1NDAwMiwiZXhwIjoxNzgxMTg2MDAyfQ.ay1VHA7HSv74GIUVJHg115tP90T4oZdvrRn4T00H-2Y",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/teams/6a149bbb7f46a73f21cdd730/reactivate",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "teams",
+            "6a149bbb7f46a73f21cdd730",
+            "reactivate"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Add Team Members",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MTA5ODU2NiwiZXhwIjoxNzgxODc2MTY2fQ.-R66iLuWhiEHPnYkVpzB32QcloGfZto5U6djrMM5J24",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"members\": [\"6a08312582da90089e70983c\", \"6a1e50edb48e2980852d4a1d\"]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/teams/6a149bbb7f46a73f21cdd730/members",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "teams",
+            "6a149bbb7f46a73f21cdd730",
+            "members"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Team Member",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MTA5ODU2NiwiZXhwIjoxNzgxODc2MTY2fQ.-R66iLuWhiEHPnYkVpzB32QcloGfZto5U6djrMM5J24",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/teams/6a149bbb7f46a73f21cdd730/members/6a240dad5f8e18d2d5c58554",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "teams",
+            "6a149bbb7f46a73f21cdd730",
+            "members",
+            "6a240dad5f8e18d2d5c58554"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Team Projects",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMWU1MGVkYjQ4ZTI5ODA4NTJkNGExZCIsImlhdCI6MTc4MTE2MDMwOSwiZXhwIjoxNzgxOTM3OTA5fQ.C9KKx2S6HMVhD1ZtajMBmN5PwWUaCBwdCb_PxtcIliw",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"title\": \"Team C\",\r\n    \"teamLead\": \"69f0cd471483dbd1a4a8f9ab\"\r\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/teams/6a149bbb7f46a73f21cdd730/projects",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "teams",
+            "6a149bbb7f46a73f21cdd730",
+            "projects"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Project",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDQ3MTQ4M2RiZDFhNGE4ZjlhYiIsImlhdCI6MTc4MTA5ODYzOCwiZXhwIjoxNzgxODc2MjM4fQ.JAj7lcS3iVLWLuPBqHLOTsTPLGxfMmhggh4UR86hGbw",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"title\": \"Project E-Shop\",\r\n    \"team\": \"6a149bbb7f46a73f21cdd730\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/projects",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "projects"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Projects",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MTA5ODU2NiwiZXhwIjoxNzgxODc2MTY2fQ.-R66iLuWhiEHPnYkVpzB32QcloGfZto5U6djrMM5J24",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/projects",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "projects"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Project",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMWU1MGVkYjQ4ZTI5ODA4NTJkNGExZCIsImlhdCI6MTc4MTE2MDMwOSwiZXhwIjoxNzgxOTM3OTA5fQ.C9KKx2S6HMVhD1ZtajMBmN5PwWUaCBwdCb_PxtcIliw",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/projects/6a2a9bdc0a63a31f4021981f",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "projects",
+            "6a2a9bdc0a63a31f4021981f"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update Project",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MTA5ODU2NiwiZXhwIjoxNzgxODc2MTY2fQ.-R66iLuWhiEHPnYkVpzB32QcloGfZto5U6djrMM5J24",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"team\": \"6a149bbb7f46a73f21cdd730\",\r\n    \"status\": \"planning\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/projects/6a2a9bdc0a63a31f4021981f",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "projects",
+            "6a2a9bdc0a63a31f4021981f"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Project",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MDc1NDAwMiwiZXhwIjoxNzgxMTg2MDAyfQ.ay1VHA7HSv74GIUVJHg115tP90T4oZdvrRn4T00H-2Y",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/projects/6a1ffebfb926512bb26034e8/",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "projects",
+            "6a1ffebfb926512bb26034e8",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Project Issues",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjM4MzczYzBiMGZlN2M2MzI3NjNhYyIsImlhdCI6MTc4MTA5ODYwMywiZXhwIjoxNzgxODc2MjAzfQ.uCPpttiigdtaSk_vuqhaDRqb0tSV8tQoYotR3AoBGJg",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/v1/projects/6a1499ad0943788d17021c9b/issues",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "projects",
+            "6a1499ad0943788d17021c9b",
+            "issues"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Issue",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDljMTQ4M2RiZDFhNGE4ZjliMSIsImlhdCI6MTc4MTA5ODY2OSwiZXhwIjoxNzgxODc2MjY5fQ.0SkLc-GkjulHRYYITPJa4FHL0v_mpI5grgb179QVflo",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"title\": \"Add dark mode to listPage\",\r\n    \"project\": \"6a1499ad0943788d17021c9b\",\r\n    \"assignedTo\": \"69f0cd881483dbd1a4a8f9af\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/issues",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "issues"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Issues",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDcxMTQ4M2RiZDFhNGE4ZjlhZCIsImlhdCI6MTc4MTA5ODU2NiwiZXhwIjoxNzgxODc2MTY2fQ.-R66iLuWhiEHPnYkVpzB32QcloGfZto5U6djrMM5J24",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/v1/issues/",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "issues",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Issue",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjM4MzczYzBiMGZlN2M2MzI3NjNhYyIsImlhdCI6MTc4MTA5ODYwMywiZXhwIjoxNzgxODc2MjAzfQ.uCPpttiigdtaSk_vuqhaDRqb0tSV8tQoYotR3AoBGJg",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/issues/6a2ab28bb8af00aa5f6ac08d",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "issues",
+            "6a2ab28bb8af00aa5f6ac08d"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update Issue",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDg4MTQ4M2RiZDFhNGE4ZjlhZiIsImlhdCI6MTc4MTE4NjI3NSwiZXhwIjoxNzgxOTYzODc1fQ.FF49APju9gpw0ldFXwoQiH6GepuEsQ0sYVZPWN7JB8w",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{   \r\n    \"status\": \"open\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/issues/6a2ab28bb8af00aa5f6ac08d",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "issues",
+            "6a2ab28bb8af00aa5f6ac08d"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Issue",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjM4MzczYzBiMGZlN2M2MzI3NjNhYyIsImlhdCI6MTc4MTA5ODYwMywiZXhwIjoxNzgxODc2MjAzfQ.uCPpttiigdtaSk_vuqhaDRqb0tSV8tQoYotR3AoBGJg",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/issues/6a2ab28bb8af00aa5f6ac08d",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "issues",
+            "6a2ab28bb8af00aa5f6ac08d"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Comment",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDljMTQ4M2RiZDFhNGE4ZjliMSIsImlhdCI6MTc4MTA5ODY2OSwiZXhwIjoxNzgxODc2MjY5fQ.0SkLc-GkjulHRYYITPJa4FHL0v_mpI5grgb179QVflo",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"text\": \"while animate the page layouts style get rotten\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/issues/6a19cc8cb6c546b275f6f3b7/comments",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "issues",
+            "6a19cc8cb6c546b275f6f3b7",
+            "comments"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Issue Comments",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDljMTQ4M2RiZDFhNGE4ZjliMSIsImlhdCI6MTc4MTA5ODY2OSwiZXhwIjoxNzgxODc2MjY5fQ.0SkLc-GkjulHRYYITPJa4FHL0v_mpI5grgb179QVflo",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"text\": \"while animate the page layouts get broken\"\r\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/issues/6a19cc8cb6c546b275f6f3b7/comments",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "issues",
+            "6a19cc8cb6c546b275f6f3b7",
+            "comments"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update a comment",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDljMTQ4M2RiZDFhNGE4ZjliMSIsImlhdCI6MTc4MTA5ODY2OSwiZXhwIjoxNzgxODc2MjY5fQ.0SkLc-GkjulHRYYITPJa4FHL0v_mpI5grgb179QVflo",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"text\": \"while animate the page layouts style get rotten\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/issues/6a19cc8cb6c546b275f6f3b7/comments/6a2acd1b5dd194dcbfab86a5",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "issues",
+            "6a19cc8cb6c546b275f6f3b7",
+            "comments",
+            "6a2acd1b5dd194dcbfab86a5"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Comment",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZjBjZDljMTQ4M2RiZDFhNGE4ZjliMSIsImlhdCI6MTc4MTA5ODY2OSwiZXhwIjoxNzgxODc2MjY5fQ.0SkLc-GkjulHRYYITPJa4FHL0v_mpI5grgb179QVflo",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/v1/issues/6a19cc8cb6c546b275f6f3b7/comments/6a2adb10f17372c1adc8d0a0",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "v1",
+            "issues",
+            "6a19cc8cb6c546b275f6f3b7",
+            "comments",
+            "6a2adb10f17372c1adc8d0a0"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
