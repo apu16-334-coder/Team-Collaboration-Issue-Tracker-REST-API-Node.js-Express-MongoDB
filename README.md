@@ -318,25 +318,6 @@ Response:
 }
 \`\`\`
 
-**POST** `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1/auth/signup`
-
-Request:
-\`\`\`json
-{
-    "name": "Arif Hossain",
-    "email": "arif@gmail.com",
-    "password": "456321arif"
-}
-\`\`\`
-
-Response:
-\`\`\`json
-{
-    "success": true,
-    "message": "Account created successfully. Please log in."
-}
-\`\`\`
-
 ### Login
 
 **POST** `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1/auth/login`
