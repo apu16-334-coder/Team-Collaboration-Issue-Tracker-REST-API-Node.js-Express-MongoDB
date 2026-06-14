@@ -290,4 +290,272 @@ A ready-to-use Postman collection is included to test all endpoints.
 3. Select the JSON file from the `postman/` folder
 4. Set the `baseUrl` variable to either(optional):
    - `http://localhost:3000/api/v1` (local)
+   - `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1` (deployed)
 5. Run `/auth/login` first to get a token, then set it as the `token` variable for authenticated routes(optional)
+
+## Sample Requests & Responses
+
+### Signup
+
+**POST** `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1/auth/signup`
+
+Request:
+\`\`\`json
+{
+    "name": "Arif Hossain",
+    "email": "arif@gmail.com",
+    "password": "456321arif"
+}
+\`\`\`
+
+Response:
+\`\`\`json
+{
+    "success": true,
+    "message": "Account created successfully. Please log in."
+}
+\`\`\`
+
+**POST** `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1/auth/signup`
+
+Request:
+\`\`\`json
+{
+    "name": "Arif Hossain",
+    "email": "arif@gmail.com",
+    "password": "456321arif"
+}
+\`\`\`
+
+Response:
+\`\`\`json
+{
+    "success": true,
+    "message": "Account created successfully. Please log in."
+}
+\`\`\`
+
+### Login
+
+**POST** `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1/auth/login`
+
+Request:
+\`\`\`json
+{
+    "email": "arif@gmail.com",
+    "password": "456321arif"
+}
+\`\`\`
+
+Response:
+\`\`\`json
+{
+    "success": true,
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMmVjOTk1NjM5MWY4MzA0ZmM2MjhmNSIsImlhdCI6MTc4MTQ1MTQ4OSwiZXhwIjoxNzgxNTM3ODg5fQ.tBJiM5f_AwMn81sEXb7xM_V-7rdx2fQrlR6BBhVNyr4",
+    "data": {
+        "id": "6a2ec9956391f8304fc628f5",
+        "name": "Arif Hossain",
+        "email": "arif@gmail.com",
+        "role": "member"
+    }
+}
+\`\`\`
+
+### Unauthorized Access
+
+**GET** `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1/users`(no token)
+
+Response:
+\`\`\`json
+{
+    "success": false,
+    "message": "You are not logged in. Please log in"
+}
+\`\`\`
+
+### Created a Issue
+
+**POST** `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1/issues`
+
+Request:
+\`\`\`json
+{
+    "title": "Add dark mode to listPage",
+    "project": "6a1499ad0943788d17021c9b",
+    "assignedTo": "6a2ec9956391f8304fc628f5"
+}
+\`\`\`
+
+Response:
+\`\`\`json
+{
+    "success": true,
+    "data": {
+        "title": "Add dark mode to listPage",
+        "status": "open",
+        "priority": "medium",
+        "type": "task",
+        "project": "6a1499ad0943788d17021c9b",
+        "assignedTo": "6a2ec9956391f8304fc628f5",
+        "createdBy": "6a2ec9956391f8304fc628f5",
+        "createdAt": "2026-06-14T15:56:15.038Z",
+        "updatedAt": "2026-06-14T15:56:15.038Z",
+        "id": "6a2ecf1f6391f8304fc628fb"
+    }
+}
+\`\`\`
+
+### Get a Issue
+
+**GET** `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1/issues/6a2ecf1f6391f8304fc628fb`
+
+Response:
+\`\`\`json
+{
+    "success": true,
+    "data": {
+        "title": "Add dark mode to listPage",
+        "status": "open",
+        "priority": "medium",
+        "type": "task",
+        "project": {
+            "title": "Project N",
+            "status": "active",
+            "team": {
+                "title": "Team A",
+                "teamLead": "69f38373c0b0fe7c632763ac",
+                "members": [
+                    "69f0cd881483dbd1a4a8f9af",
+                    "69f0cd9c1483dbd1a4a8f9b1",
+                    "6a2ec9956391f8304fc628f5"
+                ],
+                "id": "6a11e95c4fdb38d4d97791cb"
+            },
+            "id": "6a1499ad0943788d17021c9b"
+        },
+        "assignedTo": {
+            "name": "Arif Hossain",
+            "email": "arif@gmail.com",
+            "isActive": true,
+            "id": "6a2ec9956391f8304fc628f5"
+        },
+        "createdBy": {
+            "name": "Arif Hossain",
+            "email": "arif@gmail.com",
+            "isActive": true,
+            "id": "6a2ec9956391f8304fc628f5"
+        },
+        "createdAt": "2026-06-14T15:56:15.038Z",
+        "updatedAt": "2026-06-14T15:56:15.038Z",
+        "id": "6a2ecf1f6391f8304fc628fb"
+    }
+}
+\`\`\`
+
+### Update a Issue
+
+**PATCH** `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1/issues/6a2ecf1f6391f8304fc628fb`
+
+Request:
+\`\`\`json
+{
+    "title": "Add dark mode to listPage block"
+}
+\`\`\`
+
+Response:
+\`\`\`json
+{
+    "success": true,
+    "data": {
+        "title": "Add dark mode to listPage block",
+        "status": "open",
+        "priority": "medium",
+        "type": "task",
+        "project": {
+            "title": "Project N",
+            "team": "6a11e95c4fdb38d4d97791cb",
+            "id": "6a1499ad0943788d17021c9b"
+        },
+        "assignedTo": {
+            "name": "Arif Hossain",
+            "email": "arif@gmail.com",
+            "isActive": true,
+            "id": "6a2ec9956391f8304fc628f5"
+        },
+        "createdBy": "6a2ec9956391f8304fc628f5",
+        "createdAt": "2026-06-14T15:56:15.038Z",
+        "updatedAt": "2026-06-14T17:11:07.416Z",
+        "id": "6a2ecf1f6391f8304fc628fb"
+    }
+}
+\`\`\`
+
+### DELETE a Issue
+
+**GET** `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1/issues/6a2ecf1f6391f8304fc628fb`
+
+Response:
+\`\`\`json
+{
+    "success": false,
+    "message": "You do not have permission to perform this action"
+}
+\`\`\`
+
+### Get all Issues of a Project (pagination, search, sort, filter)
+
+**GET** `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1/projects/6a1499ad0943788d17021c9b/issues?status=open&sort=-updatedAt&search=add`
+
+Response:
+\`\`\`json
+{
+    "success": true,
+    "results": 2,
+    "total": 2,
+    "page": 1,
+    "limit": 10,
+    "data": [
+        {
+            "title": "Add dark mode to listPage block",
+            "status": "open",
+            "priority": "medium",
+            "type": "task",
+            "project": {
+                "title": "Project N",
+                "id": "6a1499ad0943788d17021c9b"
+            },
+            "assignedTo": {
+                "name": "Arif Hossain",
+                "email": "arif@gmail.com",
+                "isActive": true,
+                "id": "6a2ec9956391f8304fc628f5"
+            },
+            "createdBy": "6a2ec9956391f8304fc628f5",
+            "createdAt": "2026-06-14T15:56:15.038Z",
+            "updatedAt": "2026-06-14T17:11:07.416Z",
+            "id": "6a2ecf1f6391f8304fc628fb"
+        },
+        {
+            "title": "Add animation to homepage",
+            "status": "open",
+            "priority": "medium",
+            "type": "feature",
+            "project": {
+                "title": "Project N",
+                "id": "6a1499ad0943788d17021c9b"
+            },
+            "assignedTo": {
+                "name": "Rahat",
+                "email": "rahat@gmail.com",
+                "isActive": true,
+                "id": "69f0cd9c1483dbd1a4a8f9b1"
+            },
+            "createdBy": "69f0cd881483dbd1a4a8f9af",
+            "createdAt": "2026-05-29T17:27:19.883Z",
+            "updatedAt": "2026-06-10T14:06:35.673Z",
+            "id": "6a19cc77b6c546b275f6f3b2"
+        }
+    ]
+}
+\`\`\`
