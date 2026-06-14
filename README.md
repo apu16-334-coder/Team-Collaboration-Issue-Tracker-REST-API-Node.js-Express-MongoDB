@@ -20,6 +20,8 @@ A RESTful backend API for managing teams, projects, and issues — built with No
   - [Comments](#comments)
 - [Role & Permission Model](#role--permission-model)
 - [Design Decisions](#design-decisions)
+- [Postman Collection](#postman-collectio)
+- [Sample Requests & Responses](#sample-requests--responses)
 
 ---
 
