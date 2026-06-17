@@ -20,7 +20,7 @@ A RESTful backend API for managing teams, projects, and issues — built with No
   - [Comments](#comments)
 - [Role & Permission Model](#role--permission-model)
 - [Design Decisions](#design-decisions)
-- [Postman Collection](#postman-collectio)
+- [Postman Collection](#postman-collection)
 - [Sample Requests & Responses](#sample-requests--responses)
 
 ---
@@ -129,7 +129,7 @@ Create a `.env` file in the root directory:
 NODE_ENV=development
 PORT=3000
 
-DATABASE=mongodb://<username>:<password>@@ac-stfxknv-shard-00-02.6c0zmig.mongodb.net:27017,ac-stfxknv-shard-00-00.6c0zmig.mongodb.net:27017,ac-stfxknv-shard-00-01.6c0zmig.mongodb:27017/TeamCollaborationIssueTrackerDB?ssl=true&authSource=admin&retryWrites=true&w=majority
+DATABASE=your_mongodb_connection_string
 
 DATABASE_PASSWORD=your_mongodb_password
 
