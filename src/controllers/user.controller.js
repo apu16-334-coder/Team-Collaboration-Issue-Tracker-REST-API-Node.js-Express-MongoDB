@@ -6,6 +6,7 @@ const catchAsync = require('../utils/catchAsync.js')
 const AppError = require("../utils/AppError.js");
 const ApiFeatures = require("../utils/apiFeatures.js");
 const filterBody = require("../utils/filterBody.js")
+const mongoose = require("mongoose");
 
 /**
  * @typedef {import('express').RequestHandler} RequestHandler
@@ -208,56 +209,74 @@ const deleteUser = catchAsync(
         if (!user) return next(new AppError(404, 'User is not found'));
         if (!user.isActive) return next(new AppError(400, 'User is already deactivated'));
 
-        // If target user is teamLead
-        if (user.role === 'team_lead') {
-            // set all of his team's teamlead null
-            await Teams.updateMany(
-                { teamLead: user.id },
-                { teamLead: null }
-            );
-        }
+        const session = await mongoose.startSession();
+        try {
+            session.startTransaction();
 
-        // If taget user is member
-        if (user.role === 'member') {
-            // find all teams he or she belongs
-            const allTeams = await Teams.find({ members: user.id })
-                .select('_id');
-
-            const allTeamsIds = allTeams.map(p => p._id);
-
-            // if there is teams
-            if (allTeamsIds.length > 0) {
-                // remove from all teams he or she belongs
+            // If target user is teamLead
+            if (user.role === 'team_lead') {
+                // set all of his team's teamlead null
                 await Teams.updateMany(
-                    { _id: { $in: allTeamsIds } },
-                    { $pull: { members: user.id } }
+                    { teamLead: user.id },
+                    { teamLead: null },
+                    { session }
                 );
+            }
 
-                // First find all running projects of his or her teams
-                const runningProjects = await Projects.find({
-                    team: { $in: allTeamsIds },
-                    status: { $nin: ['cancelled', 'archived'] }
-                }).select('_id')
+            // If taget user is member
+            if (user.role === 'member') {
+                // find all teams he or she belongs
+                const allTeams = await Teams.find({ members: user.id })
+                    .select('_id')
+                    .session(session);
 
-                const runningProjectsIds = runningProjects.map(p => p._id)
+                const allTeamsIds = allTeams.map(p => p._id);
 
-                if (runningProjectsIds.length > 0) {
-                    // remove from any imcomplete issue he or she assigned
-                    await Issues.updateMany(
-                        {
-                            assignedTo: user.id,
-                            status: { $nin: ['cancelled'] },
-                            project: { $in: runningProjectsIds }
-                        },
-                        { assignedTo: null }
-                    )
+                // if there is teams
+                if (allTeamsIds.length > 0) {
+                    // remove from all teams he or she belongs
+                    await Teams.updateMany(
+                        { _id: { $in: allTeamsIds } },
+                        { $pull: { members: user.id } },
+                        { session }
+                    );
+
+                    // First find all running projects of his or her teams
+                    const runningProjects = await Projects.find({
+                        team: { $in: allTeamsIds },
+                        status: { $nin: ['cancelled', 'archived'] }
+                    }).select('_id').session(session);
+
+                    const runningProjectsIds = runningProjects.map(p => p._id)
+
+                    if (runningProjectsIds.length > 0) {
+                        // remove from any imcomplete issue he or she assigned
+                        await Issues.updateMany(
+                            {
+                                assignedTo: user.id,
+                                status: { $nin: ['cancelled'] },
+                                project: { $in: runningProjectsIds }
+                            },
+                            { assignedTo: null },
+                            { session }
+                        )
+                    }
                 }
             }
-        }
 
-        user.isActive = false;
-        await user.save();
-        res.status(204).send()
+            user.isActive = false;
+            await user.save({ session });
+
+            await session.commitTransaction();
+
+            res.status(204).send()
+
+        } catch (err) {
+            await session.abortTransaction(); // ← rollback everything if any operation fails
+            throw err; // let catchAsync handle it
+        } finally {
+            session.endSession(); // ← always end session
+        }
     }
 )
 
