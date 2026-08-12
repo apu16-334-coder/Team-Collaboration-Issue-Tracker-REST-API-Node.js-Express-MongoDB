@@ -196,89 +196,86 @@ const updateUser = catchAsync(
  * Admin-only: delete a user by ID
  * DELETE /api/v1/users/:id
  */
-const deleteUser = catchAsync(
-    /** @type {RequestHandler} */
-    async (req, res, next) => {
+const deleteUser = async (req, res, next) => {
+    try {
         // Prevent self deactivate through this endpoint
-        if (req.user.id === req.params.id) {
-            return next(new AppError(403, "Admin cannot deactivate his own profile"));
-        }
+        if (req.user.id === req.params.id) return next(new AppError(403, "Admin cannot deactivate his own profile"));
+
+        const session = await mongoose.startSession();
+
+        // start the session
+        session.startTransaction();
 
         // find user
-        const user = await Users.findById(req.params.id);
+        const user = await Users.findById(req.params.id).session(session);
         if (!user) return next(new AppError(404, 'User is not found'));
         if (!user.isActive) return next(new AppError(400, 'User is already deactivated'));
 
-        const session = await mongoose.startSession();
-        try {
-            session.startTransaction();
+        // If target user is teamLead
+        if (user.role === 'team_lead') {
+            // set all of his team's teamlead null
+            await Teams.updateMany(
+                { teamLead: user.id },
+                { teamLead: null },
+                { session }
+            );
+        }
 
-            // If target user is teamLead
-            if (user.role === 'team_lead') {
-                // set all of his team's teamlead null
+        // If taget user is member
+        if (user.role === 'member') {
+            // find all teams he or she belongs
+            const allTeams = await Teams.find({ members: user.id })
+                .select('_id')
+                .session(session);
+
+            const allTeamsIds = allTeams.map(p => p._id);
+
+            // if there is teams
+            if (allTeamsIds.length > 0) {
+                // remove from all teams he or she belongs
                 await Teams.updateMany(
-                    { teamLead: user.id },
-                    { teamLead: null },
+                    { _id: { $in: allTeamsIds } },
+                    { $pull: { members: user.id } },
                     { session }
                 );
-            }
 
-            // If taget user is member
-            if (user.role === 'member') {
-                // find all teams he or she belongs
-                const allTeams = await Teams.find({ members: user.id })
-                    .select('_id')
-                    .session(session);
+                // First find all running projects of his or her teams
+                const runningProjects = await Projects.find({
+                    team: { $in: allTeamsIds },
+                    status: { $nin: ['cancelled', 'archived'] }
+                }).select('_id').session(session);
 
-                const allTeamsIds = allTeams.map(p => p._id);
+                const runningProjectsIds = runningProjects.map(p => p._id)
 
-                // if there is teams
-                if (allTeamsIds.length > 0) {
-                    // remove from all teams he or she belongs
-                    await Teams.updateMany(
-                        { _id: { $in: allTeamsIds } },
-                        { $pull: { members: user.id } },
+                if (runningProjectsIds.length > 0) {
+                    // remove from any imcomplete issue he or she assigned
+                    await Issues.updateMany(
+                        {
+                            assignedTo: user.id,
+                            status: { $nin: ['cancelled'] },
+                            project: { $in: runningProjectsIds }
+                        },
+                        { assignedTo: null },
                         { session }
-                    );
-
-                    // First find all running projects of his or her teams
-                    const runningProjects = await Projects.find({
-                        team: { $in: allTeamsIds },
-                        status: { $nin: ['cancelled', 'archived'] }
-                    }).select('_id').session(session);
-
-                    const runningProjectsIds = runningProjects.map(p => p._id)
-
-                    if (runningProjectsIds.length > 0) {
-                        // remove from any imcomplete issue he or she assigned
-                        await Issues.updateMany(
-                            {
-                                assignedTo: user.id,
-                                status: { $nin: ['cancelled'] },
-                                project: { $in: runningProjectsIds }
-                            },
-                            { assignedTo: null },
-                            { session }
-                        )
-                    }
+                    )
                 }
             }
-
-            user.isActive = false;
-            await user.save({ session });
-
-            await session.commitTransaction();
-
-            res.status(204).send()
-
-        } catch (err) {
-            await session.abortTransaction(); // ← rollback everything if any operation fails
-            throw err; // let catchAsync handle it
-        } finally {
-            session.endSession(); // ← always end session
         }
+
+        user.isActive = false;
+        await user.save({ session });
+
+        await session.commitTransaction();
+
+        res.status(204).send()
+
+    } catch (err) {
+        await session.abortTransaction(); // ← rollback everything if any operation fails
+        next(err)
+    } finally {
+        session.endSession(); // ← always end session
     }
-)
+}
 
 /**
  * userReactivate
@@ -308,16 +305,20 @@ const userReactivate = catchAsync(
  * Admin-only: change user role
  * PATCH /api/v1/users/:id/change-role
  */
-const changeUserRole = catchAsync(
-    /** @type {RequestHandler} */
-    async (req, res, next) => {
+const changeUserRole = async (req, res, next) => {
+    try {
         // Prevent self-role change through this endpoint
         if (req.user.id === req.params.id) {
             return next(new AppError(400, 'Admin can not change his own role'));
         }
 
+        const session = await mongoose.startSession();
+        
+        // session start 
+        session.startTransaction()
+
         // find user
-        const user = await Users.findById(req.params.id)
+        const user = await Users.findById(req.params.id).session(session);
         if (!user) return next(new AppError(404, 'User is not found'));
         if (!user.isActive) return next(new AppError(400, 'User is not active'));
 
@@ -333,7 +334,8 @@ const changeUserRole = catchAsync(
             // set all of his team's teamlead null
             await Teams.updateMany(
                 { teamLead: user.id },
-                { teamLead: null }
+                { teamLead: null },
+                {session}
             );
         }
 
@@ -341,7 +343,7 @@ const changeUserRole = catchAsync(
         if (user.role === 'member' && role !== 'member') {
             // find all teams he or she belongs
             const allTeams = await Teams.find({ members: user.id })
-                .select('_id');
+                .select('_id').session(session);
 
             const allTeamsIds = allTeams.map(p => p._id);
 
@@ -349,14 +351,15 @@ const changeUserRole = catchAsync(
                 // remove from all teams he or she belongs
                 await Teams.updateMany(
                     { _id: { $in: allTeamsIds } },
-                    { $pull: { members: user.id } }
+                    { $pull: { members: user.id } },
+                    {session}
                 );
 
                 // First find all running projects of his or her teams
                 const runningProjects = await Projects.find({
                     team: { $in: allTeamsIds },
                     status: { $nin: ['cancelled', 'archived'] }
-                }).select('_id')
+                }).select('_id').session(session);
 
                 const runningProjectsIds = runningProjects.map(p => p._id)
 
@@ -368,21 +371,29 @@ const changeUserRole = catchAsync(
                             status: { $nin: ['cancelled'] },
                             project: { $in: runningProjectsIds }
                         },
-                        { assignedTo: null }
+                        { assignedTo: null },
+                        {session}
                     )
                 }
             }
         }
 
         user.role = role;
-        await user.save()
+        await user.save({session});
+
+        await session.commitTransaction();
 
         res.status(200).json({
             success: true,
             data: user
         })
+    } catch (err) {
+        await session.abortTransaction(); // ← rollback everything if any operation fails
+        next(err)
+    } finally {
+        session.endSession(); // ← always end session
     }
-)
+}
 
 /**
  * resetUserPassword
