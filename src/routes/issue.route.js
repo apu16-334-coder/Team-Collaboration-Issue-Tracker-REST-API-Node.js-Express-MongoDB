@@ -20,7 +20,7 @@ const {
 // ----------------------
 
 // team_lead, member: Create new issue
-// Admin: get all projects
+// Admin: get all issues
 // POST /api/v1/issues      → create issue
 // GET  /api/v1/issues     → get all issues
 router.route("/")

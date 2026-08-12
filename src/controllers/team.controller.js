@@ -360,9 +360,8 @@ const removeTeamMember = async (req, res, next) => {
         if (!team) return abortAndNext(session, next, new AppError(404, 'Team is not found'));
         if (!team.isActive) return abortAndNext(session, next, new AppError(400, 'Team is not active'));
 
-        if (!team.members.includes(req.params.userId)) {
-            return next(new AppError(404, 'User is not a member of this team'));
-        }
+        if (!team.members.includes(req.params.userId)) return abortAndNext(session, next, new AppError(404, 'User is not a member of this team'));
+        
 
         // First find his or her all running projects from this teams
         const runningProjects = await Projects.find({

@@ -14,7 +14,7 @@ const mongoose = require('mongoose');
 
 /**
  * createIssue
- * (Admin, team_lead, member): create a new issue
+ * (team_lead, member): create a new issue
  * POST /api/v1/issues
  */
 const createIssue = catchAsync(

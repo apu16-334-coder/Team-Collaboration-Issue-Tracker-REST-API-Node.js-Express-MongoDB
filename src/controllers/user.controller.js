@@ -311,6 +311,13 @@ const changeUserRole = async (req, res, next) => {
         return next(new AppError(400, 'Admin can not change his own role'));
     }
 
+    // If request body is invalid
+    if (!req.body) return next(new AppError(400, 'Not valid request body'));
+
+    // filtering allowed fields
+    const { role } = req.body
+    if (!role) return next(new AppError(400, 'role is required'));
+
     const session = await mongoose.startSession();
     try {
         // session start 
@@ -321,15 +328,10 @@ const changeUserRole = async (req, res, next) => {
         if (!user) return abortAndNext(session, next, new AppError(404, 'User is not found'));
         if (!user.isActive) return abortAndNext(session, next, new AppError(400, 'User is not active'));
 
-        // If request body is invalid
-        if (!req.body) return next(new AppError(400, 'Not valid request body'));
-
-        // filtering allowed fields
-        const { role } = req.body
-        if (!role) return next(new AppError(400, 'role is required'));
+        if(user.role === role) return abortAndNext(session, next, new AppError(400, `User is already ${role}`));
 
         // If target user is teamLead
-        if (user.role === 'team_lead' && role !== 'team_lead') {
+        if (user.role === 'team_lead') {
             // set all of his team's teamlead null
             await Teams.updateMany(
                 { teamLead: user.id },
@@ -339,7 +341,7 @@ const changeUserRole = async (req, res, next) => {
         }
 
         // If taget user is member
-        if (user.role === 'member' && role !== 'member') {
+        if (user.role === 'member') {
             // find all teams he or she belongs
             const allTeams = await Teams.find({ members: user.id })
                 .select('_id').session(session);

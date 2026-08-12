@@ -76,7 +76,7 @@ const createComments = catchAsync(
 
 /**
  * getIssueComments
- * Admin-only: get all the comments of a Issue
+ * Admin, team-lead, member: get all the comments of a Issue
  * GET /api/v1/issues/:id/comments
  */
 const getIssueComments = catchAsync(
@@ -200,7 +200,7 @@ const updateComment = catchAsync(
 
 /**
  * deleteComment
- * team_lead/ member as author: delete a comment
+ * team_lead and member as author: delete a comment
  * DELETE /api/v1/issues/:id/comments/:commentId
  */
 const deleteComment = catchAsync(
@@ -223,6 +223,9 @@ const deleteComment = catchAsync(
 
         if (!comment) return next(new AppError(404, 'comment is not found'));
 
+        // If project of the issue of the comment is cancelled or archived
+        if (comment.issue.project.status === 'cancelled' || comment.issue.project.status === 'archived') return next(new AppError(404, 'comment is not found'))
+
         // If issue of the comment is cancelled
         if (comment.issue.status === 'cancelled') {
             const errAraay = req.user.role === "member"
@@ -232,14 +235,8 @@ const deleteComment = catchAsync(
             return next(new AppError(errAraay[0], errAraay[1]))
         }
 
-        // If project of the issue of the comment is cancelled or archived
-        if (comment.issue.project.status === 'cancelled' || comment.issue.project.status === 'archived') return next(new AppError(404, 'comment is not found'))
-
-        // if logged user is not team lead of this comment issue project team
-        if (req.user.role === 'team_lead' && comment.issue.project.team?.teamLead?.toString() !== req.user.id) return next(new AppError(403, 'Team lead can delete comment only of his or her teams projects issues'));
-
-        // If logged user is member but not author  
-        if (req.user.role === 'member' && comment.author.toString() !== req.user.id) return next(new AppError(403, 'member can only delete his or her comments'));
+        // If logged user is not the author of the comment
+        if (comment.author.toString() !== req.user.id) return next(new AppError(403, 'Only author of the comment can delete'));
 
         await Comments.findByIdAndDelete(req.params.commentId);
         res.status(204).send();

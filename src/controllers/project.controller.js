@@ -225,7 +225,7 @@ const deleteProject = catchAsync(
 
 /**
  * getProjectIssues
- * (admin | team_lead | team members) : Get all the projects of a particular team
+ * (admin | team_lead | team members) : Get all the issues of a particular project
  * GET /api/v1/projects/:id/issues
  */
 const getProjectIssues = catchAsync(
