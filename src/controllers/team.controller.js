@@ -137,7 +137,7 @@ const getTeam = catchAsync(
         }
 
         // get all members of team
-        const teamMembersIds = team.members.map(m => m.id) 
+        const teamMembersIds = team.members.map(m => m.id)
 
         // if logged user is not member of the team
         if (req.user.role === 'member' && !teamMembersIds.includes(req.user.id)) {
@@ -203,32 +203,46 @@ const updateTeam = catchAsync(
  * admin only: get a particular team by id
  * DELETE /api/v1/teams/:id (?force=true query supported)
  */
-const deleteTeam = catchAsync(
-    /** @type {RequestHandler} */
-    async (req, res, next) => {
+const deleteTeam = async (req, res, next) => {
+    try {
+        const session = await mongoose.startSession();
+
+        // start the session
+        session.startTransaction();
+
         // Find Team
-        const team = await Teams.findById(req.params.id)
+        const team = await Teams.findById(req.params.id).session(session);
         if (!team) return next(new AppError(404, 'Team is not found'));
         if (!team.isActive) return next(new AppError(400, 'Team is already deactive'));
 
         // set status of all planning or active projects of this team to on_hold
         await Projects.updateMany(
             { team: team.id, status: { $in: ['planning', 'active'] } },
-            { status: 'on_hold', team: null }
+            { status: 'on_hold', team: null },
+            { session }
         )
 
         // set status of all completed projects of this team to archived
         await Projects.updateMany(
             { team: team.id, status: 'completed' },
-            { status: 'archived' }
+            { status: 'archived' },
+            { session }
         )
 
         team.isActive = false;
-        await team.save();
+        await team.save({ session });
+
+        await session.commitTransaction();
 
         res.status(204).send();
+    } catch (err) {
+        await session.abortTransaction(); // ← rollback everything if any operation fails
+        next(err)
+    } finally {
+        session.endSession(); // ← always end session
     }
-)
+}
+
 
 /**
  * teamReactivate
