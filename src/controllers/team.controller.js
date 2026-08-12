@@ -6,6 +6,7 @@ const catchAsync = require('../utils/catchAsync.js')
 const AppError = require("../utils/AppError.js");
 const ApiFeatures = require("../utils/apiFeatures.js");
 const filterBody = require("../utils/filterBody.js");
+const abortAndNext = require("../utils/abortAndNext.js");
 const mongoose = require('mongoose');
 
 /**
@@ -204,16 +205,15 @@ const updateTeam = catchAsync(
  * DELETE /api/v1/teams/:id (?force=true query supported)
  */
 const deleteTeam = async (req, res, next) => {
+    const session = await mongoose.startSession();
     try {
-        const session = await mongoose.startSession();
-
         // start the session
         session.startTransaction();
 
         // Find Team
         const team = await Teams.findById(req.params.id).session(session);
-        if (!team) return next(new AppError(404, 'Team is not found'));
-        if (!team.isActive) return next(new AppError(400, 'Team is already deactive'));
+        if (!team) return abortAndNext(session, next, new AppError(404, 'Team is not found'));
+        if (!team.isActive) return abortAndNext(session, next, new AppError(400, 'Team is already deactivated'));
 
         // set status of all planning or active projects of this team to on_hold
         await Projects.updateMany(
@@ -239,10 +239,9 @@ const deleteTeam = async (req, res, next) => {
         await session.abortTransaction(); // ← rollback everything if any operation fails
         next(err)
     } finally {
-        session.endSession(); // ← always end session
+        await session.endSession(); // ← always end session
     }
 }
-
 
 /**
  * teamReactivate
@@ -350,23 +349,26 @@ const addTeamMembers = catchAsync(
  * (admin only): delete a member in a particulat team by id
  * DELETE /api/v1/teams/:id/members/:userId
  */
-const removeTeamMember = catchAsync(
-    /** @type {RequestHandler} */
-    async (req, res, next) => {
+const removeTeamMember = async (req, res, next) => {
+    const session = await mongoose.startSession();
+    try {
+        // start the session
+        session.startTransaction();        
+
         // find team
-        const team = await Teams.findById(req.params.id);
-        if (!team) return next(new AppError(404, 'Team is not found'));
-        if (!team.isActive) return next(new AppError(404, 'Team is not active'));
+        const team = await Teams.findById(req.params.id).session(session);
+        if (!team) return abortAndNext(session, next, new AppError(404, 'Team is not found'));
+        if (!team.isActive) return abortAndNext(session, next, new AppError(400, 'Team is not active'));
 
         if (!team.members.includes(req.params.userId)) {
             return next(new AppError(404, 'User is not a member of this team'));
         }
 
-        // First find all running projects of his or her teams
+        // First find his or her all running projects from this teams
         const runningProjects = await Projects.find({
             team: team.id,
             status: { $nin: ['cancelled', 'archived'] }
-        }).select('_id')
+        }).select('_id').session(session);
 
         const runningProjectsIds = runningProjects.map(p => p._id)
 
@@ -378,25 +380,33 @@ const removeTeamMember = catchAsync(
                     status: { $nin: ['cancelled'] },
                     project: { $in: runningProjectsIds }
                 },
-                { assignedTo: null }
+                { assignedTo: null },
+                { session }
             )
         }
 
         const updatedTeam = await Teams.findByIdAndUpdate(
             req.params.id,
             { $pull: { members: req.params.userId } },
-            { returnDocument: 'after', runValidators: true }
+            { returnDocument: 'after', runValidators: true, session }
         ).populate([
             { path: 'teamLead', select: 'name email' },
             { path: 'members', select: 'name email' }
         ])
 
+        await session.commitTransaction();
+
         res.status(200).json({
             success: true,
             data: updatedTeam
         })
+    } catch(err) {
+        await session.abortTransaction();
+        next(err)
+    } finally {
+        await session.endSession();
     }
-)
+}
 
 /**
  * getTeamProjects

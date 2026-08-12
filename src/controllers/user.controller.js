@@ -7,6 +7,7 @@ const AppError = require("../utils/AppError.js");
 const ApiFeatures = require("../utils/apiFeatures.js");
 const filterBody = require("../utils/filterBody.js")
 const mongoose = require("mongoose");
+const abortAndNext = require('../utils/abortAndNext.js')
 
 /**
  * @typedef {import('express').RequestHandler} RequestHandler
@@ -197,19 +198,18 @@ const updateUser = catchAsync(
  * DELETE /api/v1/users/:id
  */
 const deleteUser = async (req, res, next) => {
+    // Prevent self deactivate through this endpoint
+    if (req.user.id === req.params.id) return next(new AppError(403, "Admin cannot deactivate his own profile"));
+
+    const session = await mongoose.startSession();
     try {
-        // Prevent self deactivate through this endpoint
-        if (req.user.id === req.params.id) return next(new AppError(403, "Admin cannot deactivate his own profile"));
-
-        const session = await mongoose.startSession();
-
         // start the session
         session.startTransaction();
 
         // find user
         const user = await Users.findById(req.params.id).session(session);
-        if (!user) return next(new AppError(404, 'User is not found'));
-        if (!user.isActive) return next(new AppError(400, 'User is already deactivated'));
+        if (!user) return abortAndNext(session, next, new AppError(404, 'User is not found'));
+        if (!user.isActive) return abortAndNext(session, next, new AppError(400, 'User is already deactivated'));
 
         // If target user is teamLead
         if (user.role === 'team_lead') {
@@ -273,7 +273,7 @@ const deleteUser = async (req, res, next) => {
         await session.abortTransaction(); // ← rollback everything if any operation fails
         next(err)
     } finally {
-        session.endSession(); // ← always end session
+        await session.endSession(); // ← always end session
     }
 }
 
@@ -306,21 +306,20 @@ const userReactivate = catchAsync(
  * PATCH /api/v1/users/:id/change-role
  */
 const changeUserRole = async (req, res, next) => {
-    try {
-        // Prevent self-role change through this endpoint
-        if (req.user.id === req.params.id) {
-            return next(new AppError(400, 'Admin can not change his own role'));
-        }
+    // Prevent self-role change through this endpoint
+    if (req.user.id === req.params.id) {
+        return next(new AppError(400, 'Admin can not change his own role'));
+    }
 
-        const session = await mongoose.startSession();
-        
+    const session = await mongoose.startSession();
+    try {
         // session start 
         session.startTransaction()
 
         // find user
         const user = await Users.findById(req.params.id).session(session);
-        if (!user) return next(new AppError(404, 'User is not found'));
-        if (!user.isActive) return next(new AppError(400, 'User is not active'));
+        if (!user) return abortAndNext(session, next, new AppError(404, 'User is not found'));
+        if (!user.isActive) return abortAndNext(session, next, new AppError(400, 'User is not active'));
 
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
@@ -335,7 +334,7 @@ const changeUserRole = async (req, res, next) => {
             await Teams.updateMany(
                 { teamLead: user.id },
                 { teamLead: null },
-                {session}
+                { session }
             );
         }
 
@@ -352,7 +351,7 @@ const changeUserRole = async (req, res, next) => {
                 await Teams.updateMany(
                     { _id: { $in: allTeamsIds } },
                     { $pull: { members: user.id } },
-                    {session}
+                    { session }
                 );
 
                 // First find all running projects of his or her teams
@@ -372,14 +371,14 @@ const changeUserRole = async (req, res, next) => {
                             project: { $in: runningProjectsIds }
                         },
                         { assignedTo: null },
-                        {session}
+                        { session }
                     )
                 }
             }
         }
 
         user.role = role;
-        await user.save({session});
+        await user.save({ session });
 
         await session.commitTransaction();
 
@@ -391,7 +390,7 @@ const changeUserRole = async (req, res, next) => {
         await session.abortTransaction(); // ← rollback everything if any operation fails
         next(err)
     } finally {
-        session.endSession(); // ← always end session
+        await session.endSession(); // ← always end session
     }
 }
 
