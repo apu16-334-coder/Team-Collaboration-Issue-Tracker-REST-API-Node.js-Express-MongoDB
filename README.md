@@ -37,14 +37,17 @@ A RESTful backend API for managing teams, projects, and issues — built with No
 ## Features
 
 - JWT-based authentication with password-change invalidation
+- Mongoose schema validation and filtered request body, so that can avoid unwanted data
 - Role-based access control (`admin` / `team_lead` / `member`)
 - Full CRUD for users, teams, projects, issues, and comments
 - **Atomic multi-document writes** — operations that touch more than one collection (deactivating a user, changing a role, deactivating a team, removing a team member) run inside a MongoDB/Mongoose session/transaction, so a failure partway through rolls back everything instead of leaving the database half-updated
 - Cascading soft-delete logic (write-time, not query-time)
 - Advanced query support: filtering, searching, sorting, pagination
+- Password hashing for security purpose
 - Constant-time login to prevent user-enumeration attacks
 - Security hardening: Helmet, CORS, rate limiting, JSON body size limit
 - Centralized error handling with a custom `AppError` class, including a transaction-safe error path (`abortAndNext`)
+- Catch async wrapper function, for scalable and non-repeated code
 
 ---
 
@@ -773,7 +776,7 @@ Response (caller is a team lead, but not the comment's author): 403 Forbidden
 
 **GET** `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1/projects/6a1499ad0943788d17021c9b/issues?status=open&sort=-updatedAt&search=add`
 
-Response:
+Response: 200 OK
 ```json
 {
     "success": true,
