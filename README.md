@@ -47,7 +47,7 @@ A RESTful backend API for managing teams, projects, and issues — built with No
 - Constant-time login to prevent user-enumeration attacks
 - Security hardening: Helmet, CORS, rate limiting, JSON body size limit
 - Centralized error handling with a custom `AppError` class, including a transaction-safe error path (`abortAndNext`)
-- Catch async wrapper function, for scalable and non-mistake code
+- Catch async wrapper function, for scalable and non-repeated code
 
 ---
 
@@ -776,7 +776,7 @@ Response (caller is a team lead, but not the comment's author): 403 Forbidden
 
 **GET** `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1/projects/6a1499ad0943788d17021c9b/issues?status=open&sort=-updatedAt&search=add`
 
-Response:
+Response: 200 OK
 ```json
 {
     "success": true,
