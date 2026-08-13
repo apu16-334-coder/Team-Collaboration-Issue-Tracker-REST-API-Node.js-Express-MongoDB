@@ -162,6 +162,9 @@ const updateComment = catchAsync(
 
         if (!comment) return next(new AppError(404, 'comment is not found'));
 
+        // If project of the issue of the comment is cancelled or archived
+        if (comment.issue.project.status === 'cancelled' || comment.issue.project.status === 'archived') return next(new AppError(404, 'comment is not found'))
+
         // If issue of the comment is cancelled
         if (comment.issue.status === 'cancelled') {
             const errAraay = req.user.role === "member"
@@ -170,9 +173,6 @@ const updateComment = catchAsync(
 
             return next(new AppError(errAraay[0], errAraay[1]))
         }
-
-        // If project of the issue of the comment is cancelled or archived
-        if (comment.issue.project.status === 'cancelled' || comment.issue.project.status === 'archived') return next(new AppError(404, 'comment is not found'))
 
         // If logged user is not the author of the comment
         if (comment.author.toString() !== req.user.id) return next(new AppError(403, 'Only author of comment can edit'));
