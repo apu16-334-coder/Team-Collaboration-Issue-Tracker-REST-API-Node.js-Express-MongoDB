@@ -26,9 +26,9 @@ router.route("/")
     .post(restrictTo('admin'), createTeam)
     .get(restrictTo('admin'), getAllTeams)
 
-// Only team_lead: Team_lead get his teams
-// GET /api/v1/teams/my → get teams of team_lead
-router.get('/my', restrictTo('team_lead'), getMyTeams);
+// team_lead, member: Team_lead and member can get his teams
+// GET /api/v1/teams/my → get teams of team_lead or member
+router.get('/my', restrictTo('team_lead', 'member'), getMyTeams);
 
 // (admin | team_lead of team | members of team): get a particular team by id
 // admin only: update a particular team title/ description/ team_lead by id

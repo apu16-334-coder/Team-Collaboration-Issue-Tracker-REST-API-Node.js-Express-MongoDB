@@ -82,20 +82,24 @@ const getAllTeams = catchAsync(
 
 /**
  * getMyTeams
- * Team_lead only: get all the teams of logged team_lead
+ * Team_lead, member: Team_lead and member can get his teams
  * GET /api/v1/teams/my
  */
 const getMyTeams = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
+        const query = req.user.role === 'member' 
+            ? { members: req.user.id, isActive: true }
+            : { teamLead: req.user.id, isActive: true }
+
         const features = new ApiFeatures(
-            Teams.find({ teamLead: req.user.id, isActive: true }),
+            Teams.find(query),
             req.query
         ).filter().search('title', 'description').sort().pagination();
 
         // execute query 
         const teams = await features.query.populate([
-            { path: 'teamLead', select: 'name' },
+            { path: 'teamLead', select: 'name email' },
             { path: 'members', select: 'name email' }
         ]);
 
