@@ -136,7 +136,7 @@ const changePassword = catchAsync(
         if (!user || !user.isActive) return next(new AppError(404, "User is not found"));
 
         if (! await bcrypt.compare(currentPassword, user.password)) {
-            return next(new AppError(401, 'Current password is incorrect'))
+            return next(new AppError(400, 'Current password is incorrect'))
         }
 
         user.password = newPassword; // set new plain password
