@@ -20,7 +20,7 @@ const signUp = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
         // If request body is invalid
-        if(!req.body) return next(new AppError(400, 'Not valid request body'));
+        if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
         const filtered = filterBody(req.body, 'name', 'email', 'password')
 
@@ -43,7 +43,7 @@ const logIn = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
         // If request body is invalid
-        if(!req.body) return next(new AppError(400, 'Not valid request body'));
+        if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
         // get requested email and password
         const { email, password } = req.body;
@@ -74,9 +74,15 @@ const logIn = catchAsync(
             { expiresIn: process.env.JWT_EXPIRES_IN }
         )
 
+        res.cookie('jwt', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 24 * 60 * 60 * 1000 // 1 day in milliseconds — match your JWT_EXPIRES_IN
+        })
+
         res.status(200).json({
             success: true,
-            token,
             data: {
                 id: user.id,
                 name: user.name,
@@ -95,9 +101,15 @@ const logIn = catchAsync(
 const logOut = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
+        res.clearCookie('jwt', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        })
+
         res.status(200).json({
             success: true,
-            message: 'Logged out successfully, clear the token'
+            message: 'Logged out successfully'
         });
     }
 )
@@ -111,19 +123,19 @@ const changePassword = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
         // If request body is invalid
-        if(!req.body) return next(new AppError(400, 'Not valid request body'));
+        if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
         const { currentPassword, newPassword } = req.body;
 
-        if(!currentPassword) return next(new AppError(400, 'currentPassword is required'));
+        if (!currentPassword) return next(new AppError(400, 'currentPassword is required'));
 
-        if(!newPassword) return next(new AppError(400, 'newPassword is required'));
+        if (!newPassword) return next(new AppError(400, 'newPassword is required'));
 
         // Find current user + password
         const user = await Users.findById(req.user.id).select('+password');
-        if(!user || !user.isActive) return next(new AppError(404, "User is not found"));
+        if (!user || !user.isActive) return next(new AppError(404, "User is not found"));
 
-        if(! await bcrypt.compare(currentPassword, user.password)) {
+        if (! await bcrypt.compare(currentPassword, user.password)) {
             return next(new AppError(401, 'Current password is incorrect'))
         }
 
@@ -133,7 +145,7 @@ const changePassword = catchAsync(
         res.status(200).json({
             success: true,
             message: "Password changed successfully"
-        });       
+        });
     }
 )
 

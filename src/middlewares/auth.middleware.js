@@ -20,10 +20,8 @@ const AppError = require("../utils/AppError.js");
 const protect = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        // Get token from header
-        const token = req.headers.authorization?.startsWith('Bearer')
-            ? req.headers.authorization.split(" ")[1]
-            : undefined;
+        // Get token
+        const token = req.cookies?.jwt;
 
         // If no token found
         if (!token) return next(new AppError(401, 'You are not logged in. Please log in'));
@@ -45,17 +43,17 @@ const protect = catchAsync(
         }
 
         // Check if user changed password after token was issued
-        if(currentUser.passwordChangedAt) {
-            const changedTimestamp = parseInt (
+        if (currentUser.passwordChangedAt) {
+            const changedTimestamp = parseInt(
                 currentUser.passwordChangedAt.getTime() / 1000,
                 10
             )
 
-            if(decoded.iat < changedTimestamp) {
+            if (decoded.iat < changedTimestamp) {
                 return next(new AppError(401, "Password recently changed. Please log in again"));
             }
         }
-        
+
         // Attach user to request
         req.user = currentUser;
         next()
@@ -69,7 +67,7 @@ const protect = catchAsync(
  */
 const restrictTo = (...roles) => {
     return (req, res, next) => {
-        if(!req.user || !roles.includes(req.user.role)) {
+        if (!req.user || !roles.includes(req.user.role)) {
             return next(new AppError(403, "You do not have permission to perform this action"));
         }
         next()

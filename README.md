@@ -1,6 +1,6 @@
 # Team Collaboration & Issue Tracker API
 
-A RESTful backend API for managing teams, projects, and issues — built with Node.js, Express, and MongoDB. Supports role-based access control, JWT authentication, atomic multi-document transactions, and cascading data integrity logic.
+A RESTful backend API for managing teams, projects, and issues — built with Node.js, Express, and MongoDB. Supports role-based access control, cookie-based JWT authentication, atomic multi-document transactions, and cascading data integrity logic.
 
 ---
 
@@ -18,6 +18,7 @@ A RESTful backend API for managing teams, projects, and issues — built with No
   - [Projects](#projects)
   - [Issues](#issues)
   - [Comments](#comments)
+- [Authentication & Cookies](#authentication--cookies)
 - [Role & Permission Model](#role--permission-model)
 - [Business Logic & Authorization — Deep Dive](#business-logic--authorization--deep-dive)
   - [Users](#users-1)
@@ -36,7 +37,7 @@ A RESTful backend API for managing teams, projects, and issues — built with No
 
 ## Features
 
-- JWT-based authentication with password-change invalidation
+- JWT-based authentication delivered via **httpOnly cookie** (with password-change invalidation)
 - Mongoose schema validation and filtered request body, so that can avoid unwanted data
 - Role-based access control (`admin` / `team_lead` / `member`)
 - Full CRUD for users, teams, projects, issues, and comments
@@ -45,7 +46,7 @@ A RESTful backend API for managing teams, projects, and issues — built with No
 - Advanced query support: filtering, searching, sorting, pagination
 - Password hashing for security purpose
 - Constant-time login to prevent user-enumeration attacks
-- Security hardening: Helmet, CORS, rate limiting, JSON body size limit
+- Security hardening: Helmet, CORS (with credentials), rate limiting, JSON body size limit, httpOnly + SameSite cookies
 - Centralized error handling with a custom `AppError` class, including a transaction-safe error path (`abortAndNext`)
 - Catch async wrapper function, for scalable and non-repeated code
 
@@ -58,9 +59,10 @@ A RESTful backend API for managing teams, projects, and issues — built with No
 | Runtime | Node.js |
 | Framework | Express.js v5 |
 | Database | MongoDB (Mongoose v9), including multi-document ACID transactions via `mongoose.startSession()` |
-| Authentication | JSON Web Token (jsonwebtoken) |
+| Authentication | JSON Web Token (jsonwebtoken) delivered via httpOnly cookie |
+| Cookie Parsing | cookie-parser |
 | Password Hashing | bcrypt |
-| Security | Helmet, CORS, express-rate-limit |
+| Security | Helmet, CORS (credentials enabled), express-rate-limit |
 
 ---
 
@@ -149,7 +151,12 @@ DATABASE_PASSWORD=your_mongodb_password
 
 JWT_SECRET=your_super_secret_jwt_key
 JWT_EXPIRES_IN=1d
+
+# Frontend origin allowed by CORS (required for cookies)
+CLIENT_URL=http://localhost:5173
 ```
+
+> **Production note:** when `NODE_ENV=production`, the auth cookie is set with `secure: true` and `sameSite: 'none'`, so the API **must** be served over HTTPS and `CLIENT_URL` must be your deployed frontend origin (not `*`).
 
 ---
 
@@ -161,11 +168,14 @@ JWT_EXPIRES_IN=1d
 http://localhost:3000/api/v1
 ```
 
-All routes except `/auth/signup`, `/auth/login`, and `/auth/logout` require a Bearer token:
+Authentication is handled via an **httpOnly cookie named `jwt`**, which the server sets on login. The browser sends it automatically on every request — there is **no `Authorization: Bearer` header**.
 
-```
-Authorization: Bearer <your_jwt_token>
-```
+For cookie-based auth to work, the client **must**:
+
+- Send requests with credentials enabled (e.g. `credentials: 'include'` in `fetch`, or `withCredentials: true` in axios).
+- Be an allowed origin in the server's CORS config (`CLIENT_URL`), since CORS with `*` cannot be combined with credentials.
+
+All routes except `/auth/signup`, `/auth/login`, and `/auth/logout` require the auth cookie.
 
 ---
 
@@ -174,9 +184,9 @@ Authorization: Bearer <your_jwt_token>
 | Method | Endpoint | Access | Description |
 |---|---|---|---|
 | POST | `/auth/signup` | Public | Register a new user |
-| POST | `/auth/login` | Public | Login and receive JWT |
-| POST | `/auth/logout` | Public | Logout (clear token client-side) |
-| PATCH | `/auth/change-password` | Logged in | Change own password |
+| POST | `/auth/login` | Public | Login — sets an httpOnly `jwt` cookie |
+| POST | `/auth/logout` | Public | Logout — clears the `jwt` cookie server-side |
+| PATCH | `/auth/change-password` | Logged in | Change own password (invalidates existing sessions) |
 
 ---
 
@@ -258,6 +268,77 @@ Authorization: Bearer <your_jwt_token>
 | DELETE | `/issues/:id/comments/:commentId` | Author only | Delete a comment — **Admin cannot use this route, and a Team Lead who did not write the comment cannot delete it either** |
 
 > **Update and Delete role:** If a member or team-lead wrote a comment, only that member or team-lead can update and delete it **author-only, regardless of role**(admin is blocked from this route entirely).
+
+---
+
+## Authentication & Cookies
+
+The API does **not** return the JWT in the response body, and clients do **not** send an `Authorization` header. Instead, the JWT is delivered and stored as an **httpOnly cookie**, and the browser attaches it automatically to every request.
+
+### Why httpOnly cookies?
+
+Storing a JWT in `localStorage` means any JavaScript on the page (including an injected XSS payload) can read it and exfiltrate the session. An `httpOnly` cookie is invisible to `document.cookie`, so XSS cannot steal the token directly. Combined with `SameSite`, this also gives a baseline defence against CSRF.
+
+### Cookie configuration
+
+On login the server sets:
+
+```js
+res.cookie('jwt', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 24 * 60 * 60 * 1000, // 1 day — matches JWT_EXPIRES_IN
+});
+```
+
+| Option | Dev (`NODE_ENV !== 'production'`) | Prod (`NODE_ENV === 'production'`) | Purpose |
+|---|---|---|---|
+| `httpOnly` | `true` | `true` | JavaScript cannot read the cookie |
+| `secure` | `false` | `true` | Cookie only sent over HTTPS in prod |
+| `sameSite` | `'lax'` | `'none'` | `'none'` is required when frontend and backend live on different sites in production |
+
+On logout the server clears the same cookie:
+
+```js
+res.clearCookie('jwt', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+});
+```
+
+### Server-side requirements
+
+- `cookie-parser` middleware is registered in `app.js` **before** the routes, so `req.cookies.jwt` is populated.
+- CORS is configured with `credentials: true` **and** an explicit origin (never `*`):
+
+  ```js
+  app.use(cors({
+      origin: process.env.CLIENT_URL || 'http://localhost:5173',
+      credentials: true,
+  }));
+  ```
+
+### Client-side requirements
+
+- `fetch`: include `credentials: 'include'` on every request.
+- `axios`: set `withCredentials: true`.
+- The client's origin must match `CLIENT_URL`, or the browser will reject the cookie.
+
+### The `protect` middleware
+
+Instead of reading from the `Authorization` header, `protect` reads the token from the cookie:
+
+```js
+const token = req.cookies?.jwt;
+```
+
+From there it verifies the JWT and loads the user exactly as before.
+
+### Password-change invalidation
+
+`change-password` updates `passwordChangedAt` on the user document. The `protect` middleware rejects any token issued **before** that timestamp, which means **every existing session on every device** is invalidated the moment the password changes — not just the current browser. Clients receive `401` and should handle it by clearing local auth state and redirecting to login.
 
 ---
 
@@ -530,6 +611,12 @@ A member's right to edit an issue is tied to whether they are currently `assigne
 **Authorship-only comment permissions**
 Comment edit and delete rights belong exclusively to the comment's author. No role, including team lead or admin, can act on someone else's comment.
 
+**JWT stored in an httpOnly cookie (not localStorage)**
+The token never touches JavaScript. This blocks token theft via XSS — the most common way bearer-token schemes get compromised. See [Authentication & Cookies](#authentication--cookies).
+
+**Password-change invalidates all sessions**
+`passwordChangedAt` is checked in the `protect` middleware, so a password change invalidates every token issued before it — on every device, not just the current browser. Clearing the cookie in the response is a UX convenience; the real invalidation is server-side.
+
 **Constant-time login**
 Even when a user is not found, the login handler runs `bcrypt.compare()` against a dummy hash. This prevents timing attacks that could reveal whether an email exists in the system.
 
@@ -550,6 +637,9 @@ A few rules in this API are easy to misread from the endpoint table alone. These
 - **Team leads are excluded from a team's `members` array** (`members` is documented in the schema as "excludes lead"). Because issue-assignment validation checks `project.team.members`, this means a team lead cannot assign an issue to themselves through the normal assignment flow — assignment is effectively scoped to the team's members, not its lead.
 - **Reactivating a user or team does not restore prior relationships.** `userReactivate` and `teamReactivate` only flip `isActive` back to `true`; team memberships, lead assignments, and issue assignments that were cleared during deactivation are not automatically restored.
 - **Comments are the one hard-delete in the whole API.** Every other resource is soft-deleted via a status field or `isActive` flag; a deleted comment is actually removed from the database.
+- **There is no `Authorization: Bearer` header.** Authentication is entirely cookie-based. Any client that forgets `credentials: 'include'` (fetch) or `withCredentials: true` (axios) will receive `401` on every protected route.
+- **CORS `origin: '*'` will not work.** Cookies require `credentials: true` **and** an explicit origin. If you see CORS errors in the browser after switching, this is the first thing to check.
+- **A password change logs out every device.** Because `passwordChangedAt` is checked on every protected request, all JWTs issued before the change are rejected. The frontend should have a global `401` handler that clears auth state and redirects to login.
 
 ---
 
@@ -567,7 +657,9 @@ A ready-to-use Postman collection is included to test all endpoints.
 4. Set the `baseUrl` variable to either (optional):
    - `http://localhost:3000/api/v1` (local)
    - `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1` (deployed)
-5. Run `/auth/login` first to get a token, then set it as the `token` variable for authenticated routes (optional)
+5. Run `/auth/login` first. Postman will automatically store the `jwt` cookie returned by the server, and send it on all subsequent requests (as long as the collection's cookie jar is enabled).
+
+> **Note:** If your collection was previously set up to pass `Authorization: Bearer {{token}}`, you can remove that header — it is no longer used. Cookies are handled by Postman's built-in cookie jar.
 
 ## Sample Requests & Responses
 
@@ -608,7 +700,6 @@ Response: 200 OK
 ```json
 {
     "success": true,
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMmVjOTk1NjM5MWY4MzA0ZmM2MjhmNSIsImlhdCI6MTc4MTQ1MTQ4OSwiZXhwIjoxNzgxNTM3ODg5fQ.tBJiM5f_AwMn81sEXb7xM_V-7rdx2fQrlR6BBhVNyr4",
     "data": {
         "id": "6a2ec9956391f8304fc628f5",
         "name": "Arif Hossain",
@@ -618,9 +709,25 @@ Response: 200 OK
 }
 ```
 
+> The JWT is **not** in the response body. It is set by the server as an httpOnly cookie named `jwt`. The browser will send it automatically on subsequent requests.
+
+### Logout
+
+**POST** `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1/auth/logout`
+
+Response: 200 OK
+```json
+{
+    "success": true,
+    "message": "Logged out successfully"
+}
+```
+
+> The server clears the `jwt` cookie. Any further request to a protected route will return `401`.
+
 ### Unauthorized Access
 
-**GET** `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1/users` (no token)
+**GET** `https://team-collaboration-issue-tracker-rest.onrender.com/api/v1/users` (no cookie)
 
 Response: 401 Unauthorized
 ```json
