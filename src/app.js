@@ -32,7 +32,7 @@ app.use(express.json({ limit: '10kb' }));
 
 // Rate Limiter: limit requests to 100 per IP per hour
 const limiter = rateLimit({
-    max: 100,
+    max: process.env.NODE_ENV === 'development' ? 1000 : 100,
     windowMs: 60 * 60 * 1000,
     message: "Too many requests from this IP, please try again later."
 })

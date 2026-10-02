@@ -76,8 +76,8 @@ const logIn = catchAsync(
 
         res.cookie('jwt', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            secure: process.env.NODE_ENV !== 'development',
+            sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
             maxAge: 24 * 60 * 60 * 1000 // 1 day in milliseconds — match your JWT_EXPIRES_IN
         })
 
@@ -103,8 +103,8 @@ const logOut = catchAsync(
     async (req, res, next) => {
         res.clearCookie('jwt', {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            secure: process.env.NODE_ENV !== 'development',
+            sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
         })
 
         res.status(200).json({
