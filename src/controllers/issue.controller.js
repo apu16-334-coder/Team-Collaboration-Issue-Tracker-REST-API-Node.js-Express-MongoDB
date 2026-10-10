@@ -23,7 +23,16 @@ const createIssue = catchAsync(
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        const filtered = filterBody(req.body, 'title', 'description', 'priority', 'type', 'project', 'assignedTo');
+        let allowedFields = [];
+        // if user is not member
+        if (req.user.role !== 'member') {
+            allowedFields = ['title', 'description', 'priority', 'type', 'project', 'assignedTo', 'dueDate'];
+        } else {
+            allowedFields = ['title', 'description', 'priority', 'type', 'project', 'assignedTo'];
+        }
+
+        // filtered allowed fields which are available
+        const filtered = filterBody(req.body, ...allowedFields)
 
         // check if project is here
         if (filtered.project) {
@@ -115,7 +124,7 @@ const getIssue = catchAsync(
                         path: 'team',
                         select: 'title teamLead members'
                     },
-            
+
                 },
                 { path: 'assignedTo', select: 'name email isActive' },
                 { path: 'createdBy', select: 'name email isActive' },
@@ -170,7 +179,7 @@ const updateIssue = catchAsync(
 
         // If the project of the issue cancelled or archived 
         if (issue.project.status === 'cancelled' || issue.project.status === 'archived') return next(new AppError(404, 'issue is not found'));
-        
+
         // then if issue is cancelled
         if (issue.status === 'cancelled') {
             const errArray = req.user.role === 'member'
@@ -198,7 +207,7 @@ const updateIssue = catchAsync(
 
         // if user is not member
         if (req.user.role !== 'member') {
-            allowedFields = ['title', 'description', 'status', 'priority', 'type', 'project', 'assignedTo'];
+            allowedFields = ['title', 'description', 'status', 'priority', 'type', 'project', 'assignedTo', 'dueDate'];
         } else if (req.user.id === issue.createdBy.toString()) {
             allowedFields = ['title', 'description', 'status', 'priority', 'type', 'project'];
         } else if (req.user.id === issue.assignedTo?.toString()) {
@@ -287,7 +296,7 @@ const deleteIssue = catchAsync(
 
         // If the project of the issue cancelled or archived 
         if (issue.project.status === 'cancelled' || issue.project.status === 'archived') return next(new AppError(404, 'issue is not found'));
-        
+
         // If issue is cancelled
         if (issue.status === 'cancelled') return next(new AppError(400, `issue is already cancelled`));
 
