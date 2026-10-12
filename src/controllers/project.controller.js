@@ -23,7 +23,7 @@ const createProject = catchAsync(
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        const filtered = filterBody(req.body, 'title', 'description', 'team', 'dueDate')
+        const filtered = filterBody(req.body, 'title', 'description', 'team', 'dueDate');
 
         // check if team is here
         if (filtered.team) {
