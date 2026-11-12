@@ -5,7 +5,7 @@ const Issues = require("../models/issue.model.js")
 const catchAsync = require('../utils/catchAsync.js')
 const AppError = require("../utils/AppError.js");
 const ApiFeatures = require("../utils/apiFeatures.js");
-const filterBody = require("../utils/filterBody.js");
+const filtered = require("../utils/filtered.js");
 const mongoose = require('mongoose');
 
 /** 
@@ -32,7 +32,7 @@ const createIssue = catchAsync(
         }
 
         // filtered allowed fields which are available
-        const filtered = filterBody(req.body, ...allowedFields)
+        const filtered = filtered(req.body, ...allowedFields)
 
         // check if project is here
         if (filtered.project) {
@@ -215,7 +215,7 @@ const updateIssue = catchAsync(
         }
 
         // filtered allowed fields which are available
-        const filtered = filterBody(req.body, ...allowedFields)
+        const filtered = filtered(req.body, ...allowedFields)
 
         if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
 

@@ -6,7 +6,7 @@ const Comments = require("../models/comment.model.js")
 const catchAsync = require('../utils/catchAsync.js')
 const AppError = require("../utils/AppError.js");
 const ApiFeatures = require("../utils/apiFeatures.js");
-const filterBody = require("../utils/filterBody.js");
+const filtered = require("../utils/filtered.js");
 const mongoose = require('mongoose');
 
 /** 
@@ -24,7 +24,7 @@ const createComments = catchAsync(
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        const filtered = filterBody(req.body, 'text');
+        const filtered = filtered(req.body, 'text');
 
         // set author and issue
         filtered.author = req.user.id;

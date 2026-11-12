@@ -2,7 +2,7 @@
 const catchAsync = require("../utils/catchAsync.js")
 const Users = require("../models/user.model.js")
 const AppError = require("../utils/AppError.js")
-const filterBody = require("../utils/filterBody.js")
+const filtered = require("../utils/filtered.js")
 
 const bcrypt = require('bcrypt');
 const jwt = require("jsonwebtoken");
@@ -22,7 +22,7 @@ const signUp = catchAsync(
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        const filtered = filterBody(req.body, 'name', 'email', 'password')
+        const filtered = filtered(req.body, 'name', 'email', 'password')
 
         // Create user in database (password will be hashed via pre-save middleware)
         await Users.create(filtered);

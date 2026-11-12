@@ -1,4 +1,4 @@
-const filterBody = (body, ...allowedFields) =>{
+const filtered = (body, ...allowedFields) =>{
     let filtered = {};
 
     allowedFields.forEach(field => {
@@ -9,4 +9,4 @@ const filterBody = (body, ...allowedFields) =>{
     return filtered;
 }
 
-module.exports = filterBody;
+module.exports = filtered;

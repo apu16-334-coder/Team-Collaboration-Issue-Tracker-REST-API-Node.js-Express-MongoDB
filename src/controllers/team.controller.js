@@ -5,7 +5,7 @@ const Users = require("../models/user.model.js")
 const catchAsync = require('../utils/catchAsync.js')
 const AppError = require("../utils/AppError.js");
 const ApiFeatures = require("../utils/apiFeatures.js");
-const filterBody = require("../utils/filterBody.js");
+const filtered = require("../utils/filtered.js");
 const abortAndNext = require("../utils/abortAndNext.js");
 const mongoose = require('mongoose');
 
@@ -24,7 +24,7 @@ const createTeam = catchAsync(
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        const filtered = filterBody(req.body, 'title', 'description', 'teamLead', 'isActive')
+        const filtered = filtered(req.body, 'title', 'description', 'teamLead', 'isActive')
 
         if (filtered.teamLead) {
             // Find teamLead user
@@ -172,7 +172,7 @@ const updateTeam = catchAsync(
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        const filtered = filterBody(req.body, 'title', 'description', 'teamLead');
+        const filtered = filtered(req.body, 'title', 'description', 'teamLead');
 
         if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
 

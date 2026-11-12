@@ -5,9 +5,10 @@ const Issues = require('../models/issue.model.js')
 const catchAsync = require('../utils/catchAsync.js')
 const AppError = require("../utils/AppError.js");
 const ApiFeatures = require("../utils/apiFeatures.js");
-const filterBody = require("../utils/filterBody.js")
+const filtered = require("../utils/filtered.js")
 const mongoose = require("mongoose");
 const abortAndNext = require('../utils/abortAndNext.js')
+const stripOperators = require('../utils/stripOpeartors.js')
 
 /**
  * @typedef {import('express').RequestHandler} RequestHandler
@@ -25,10 +26,10 @@ const createUser = catchAsync(
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
         // Filtered unwanted fields
-        const filtered = filterBody(req.body, 'name', 'email', 'password', 'role', 'isActive')
+        const filteredBody= filtered(req.body, 'name', 'email', 'password', 'role', 'isActive')
 
         // execute create user mongoose query
-        const user = await Users.create(filtered);
+        const user = await Users.create(filteredBody);
 
         // send response with user data
         res.status(201).json({
@@ -52,11 +53,16 @@ const createUser = catchAsync(
 const getAllUsers = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
+        // filtered req.query allowedFields
+        const filteredQueryParams = filtered(req.query,'role', 'isActive','page', 'limit', 'sort', 'search');
+
+        const stripedOperatorQueryParams = stripOperators(filteredQueryParams);
+
         // Adding Api features(filter, search, sort, pagination) to query
-        const features = new ApiFeatures(Users.find(), req.query)
+        const features = new ApiFeatures(Users.find(), stripedOperatorQueryParams)
             .filter()
             .search('name', 'email') // Search in name AND email fields
-            .sort()
+            .sort('createdAt', '-createdAt', 'updatedAt', '-updatedAt')
             .pagination()
 
         // execute query
@@ -109,13 +115,13 @@ const updateMe = catchAsync(
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        const filtered = filterBody(req.body, 'name', 'email');
+        const filteredBody = filtered(req.body, 'name', 'email');
 
-        if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
+        if (Object.keys(filteredBody).length === 0) return next(new AppError(400, "No valid fields to update"));
 
         const user = await Users.findByIdAndUpdate(
             req.user.id,
-            filtered,
+            filteredBody,
             { returnDocument: 'after', runValidators: true }
         );
 
@@ -175,13 +181,13 @@ const updateUser = catchAsync(
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        const filtered = filterBody(req.body, 'name', 'email');
+        const filteredBody = filtered(req.body, 'name', 'email');
 
-        if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
+        if (Object.keys(filteredBody).length === 0) return next(new AppError(400, "No valid fields to update"));
 
         const updatedUser = await Users.findByIdAndUpdate(
             user.id,
-            filtered,
+            filteredBody,
             { returnDocument: 'after', runValidators: true }
         )
 
