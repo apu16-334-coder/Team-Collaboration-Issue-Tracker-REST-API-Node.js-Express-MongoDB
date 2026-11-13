@@ -8,6 +8,7 @@ const ApiFeatures = require("../utils/apiFeatures.js");
 const filtered = require("../utils/filtered.js");
 const abortAndNext = require("../utils/abortAndNext.js");
 const mongoose = require('mongoose');
+const stripOperators = require("../utils/stripOperators.js")
 
 /**
  * @typedef {import('express').RequestHandler} RequestHandler
@@ -24,11 +25,11 @@ const createTeam = catchAsync(
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        const filtered = filtered(req.body, 'title', 'description', 'teamLead', 'isActive')
+        const filteredBody = filtered(req.body, 'title', 'description', 'teamLead', 'isActive');
 
-        if (filtered.teamLead) {
+        if (filteredBody.teamLead) {
             // Find teamLead user
-            const lead = await Users.findById(filtered.teamLead).select('isActive role')
+            const lead = await Users.findById(filteredBody.teamLead).select('isActive role')
             if (!lead) return next(new AppError(404, 'Team_lead is not found'));
             if (lead.role !== 'team_lead') return next(new AppError(400, 'Only user with role team_lead can assign as a lead in a team'));
             if (!lead.isActive) return next(new AppError(400, 'Team_lead is not active'));
@@ -36,7 +37,7 @@ const createTeam = catchAsync(
             return next(new AppError(400, 'teamLead is required'));
         }
 
-        const team = await Teams.create(filtered);
+        const team = await Teams.create(filteredBody);
 
         res.status(201).json({
             success: true,
@@ -53,10 +54,15 @@ const createTeam = catchAsync(
 const getAllTeams = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        const features = new ApiFeatures(Teams.find(), req.query)
+        // filtered req.query allowedFields
+        const filteredQueryParams = filtered(req.query, 'teamLead', 'members', 'isActive', 'page', 'limit', 'sort', 'search');
+
+        const stripedOperatorQueryParams = stripOperators(filteredQueryParams);
+
+        const features = new ApiFeatures(Teams.find(), stripedOperatorQueryParams)
             .filter()
             .search('title', 'description')
-            .sort()
+            .sort('createdAt', '-createdAt', 'updatedAt', '-updatedAt')
             .pagination()
 
         // execute query 
@@ -88,13 +94,22 @@ const getAllTeams = catchAsync(
 const getMyTeams = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        const query = req.user.role === 'member' 
+        const whitelist = req.user.role === 'member'
+            ? ['page', 'limit', 'sort', 'search']
+            : ['members', 'page', 'limit', 'sort', 'search'];
+
+        // filtered req.query allowedFields
+        const filteredQueryParams = filtered(req.query, ...whitelist);
+
+        const stripedOperatorQueryParams = stripOperators(filteredQueryParams);
+
+        const queryConditionsObj = req.user.role === 'member'
             ? { members: req.user.id, isActive: true }
             : { teamLead: req.user.id, isActive: true }
 
         const features = new ApiFeatures(
-            Teams.find(query),
-            req.query
+            Teams.find(queryConditionsObj),
+            stripedOperatorQueryParams,
         ).filter().search('title', 'description').sort().pagination();
 
         // execute query 
@@ -172,13 +187,13 @@ const updateTeam = catchAsync(
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        const filtered = filtered(req.body, 'title', 'description', 'teamLead');
+        const filteredBody = filtered(req.body, 'title', 'description', 'teamLead');
 
-        if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
+        if (Object.keys(filteredBody).length === 0) return next(new AppError(400, "No valid fields to update"));
 
-        if (filtered.teamLead) {
+        if (filteredBody.teamLead) {
             // Find teamLead user
-            const lead = await Users.findById(filtered.teamLead).select('isActive role')
+            const lead = await Users.findById(filteredBody.teamLead).select('isActive role')
 
             if (!lead) return next(new AppError(404, 'Team_lead is not found'));
 
@@ -189,7 +204,7 @@ const updateTeam = catchAsync(
 
         const updatedTeam = await Teams.findByIdAndUpdate(
             req.params.id,
-            filtered,
+            filteredBody,
             { returnDocument: 'after', runValidators: true }
         ).populate([
             { path: 'teamLead', select: 'name email' },
@@ -357,7 +372,7 @@ const removeTeamMember = async (req, res, next) => {
     const session = await mongoose.startSession();
     try {
         // start the session
-        session.startTransaction();        
+        session.startTransaction();
 
         // find team
         const team = await Teams.findById(req.params.id).session(session);
@@ -365,7 +380,7 @@ const removeTeamMember = async (req, res, next) => {
         if (!team.isActive) return abortAndNext(session, next, new AppError(400, 'Team is not active'));
 
         if (!team.members.includes(req.params.userId)) return abortAndNext(session, next, new AppError(404, 'User is not a member of this team'));
-        
+
 
         // First find his or her all running projects from this teams
         const runningProjects = await Projects.find({
@@ -403,7 +418,7 @@ const removeTeamMember = async (req, res, next) => {
             success: true,
             data: updatedTeam
         })
-    } catch(err) {
+    } catch (err) {
         await session.abortTransaction();
         next(err)
     } finally {
@@ -444,14 +459,19 @@ const getTeamProjects = catchAsync(
             return next(new AppError(403, 'member can get his or her teams projects only'));
         }
 
+        // filtered req.query allowedFields
+        const filteredQueryParams = filtered(req.query, 'dueDate', 'status', 'page', 'limit', 'sort', 'search');
+
+        const stripedOperatorQueryParams = stripOperators(filteredQueryParams);
+
         const queryConditionsObj = req.user.role === 'admin'
             ? { team: team.id }
             : { team: team.id, status: { $nin: ['cancelled', 'archived'] } };
 
-        const features = new ApiFeatures(Projects.find(queryConditionsObj), req.query)
+        const features = new ApiFeatures(Projects.find(queryConditionsObj), stripedOperatorQueryParams)
             .filter()
             .search('title', 'description')
-            .sort()
+            .sort('createdAt', '-createdAt', 'updatedAt', '-updatedAt', 'dueDate', '-dueDate')
             .pagination()
 
         // execute query 

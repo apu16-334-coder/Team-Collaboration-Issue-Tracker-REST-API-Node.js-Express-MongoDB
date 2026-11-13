@@ -8,7 +8,7 @@ const ApiFeatures = require("../utils/apiFeatures.js");
 const filtered = require("../utils/filtered.js")
 const mongoose = require("mongoose");
 const abortAndNext = require('../utils/abortAndNext.js')
-const stripOperators = require('../utils/stripOpeartors.js')
+const stripOperators = require('../utils/stripOperators.js')
 
 /**
  * @typedef {import('express').RequestHandler} RequestHandler

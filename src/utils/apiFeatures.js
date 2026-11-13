@@ -49,7 +49,7 @@ class ApiFeatures {
         // ...build customQueryObj safely...
         this.query = this.query.find({
             ...this.customQueryObj,
-            ...this.queryConditions   // base scope applied LAST, always wins
+            ...this.queryConditions, // base scope applied LAST, always wins
         });
         return this;
     }
@@ -109,7 +109,10 @@ class ApiFeatures {
      * @returns {Object} - Combined filter for counting documents
      */
     getQueryObjForCount() {
-        return { ...this.queryConditions, ...this.customQueryObj };
+        return {
+            ...this.customQueryObj,
+            ...this.queryConditions, // base scope applied LAST, always wins };
+        }
     }
 }
 
