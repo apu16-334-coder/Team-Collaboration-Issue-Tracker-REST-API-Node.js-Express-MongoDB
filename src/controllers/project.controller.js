@@ -274,7 +274,7 @@ const getProjectIssues = catchAsync(
         const features = new ApiFeatures(Issues.find(queryConditionsObj), stripedOperatorQueryParams)
             .filter()
             .search('title', 'description')
-            .sort()
+            .sort('createdAt', '-createdAt', 'updatedAt', '-updatedAt', 'dueDate', '-dueDate')
             .pagination()
 
         // execute query 
