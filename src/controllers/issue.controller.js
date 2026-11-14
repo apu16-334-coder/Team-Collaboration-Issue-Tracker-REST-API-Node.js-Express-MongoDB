@@ -1,12 +1,10 @@
-const Teams = require("../models/team.model.js")
-const Users = require("../models/user.model.js")
 const Projects = require("../models/project.model.js")
 const Issues = require("../models/issue.model.js")
 const catchAsync = require('../utils/catchAsync.js')
 const AppError = require("../utils/AppError.js");
 const ApiFeatures = require("../utils/apiFeatures.js");
 const filtered = require("../utils/filtered.js");
-const mongoose = require('mongoose');
+const stripOperators = require("../utils/stripOperators.js")
 
 /** 
  * @typedef {import('express').RequestHandler} RequestHandler

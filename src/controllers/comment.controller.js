@@ -1,13 +1,10 @@
-const Teams = require("../models/team.model.js")
-const Users = require("../models/user.model.js")
-const Projects = require("../models/project.model.js")
 const Issues = require("../models/issue.model.js")
 const Comments = require("../models/comment.model.js")
 const catchAsync = require('../utils/catchAsync.js')
 const AppError = require("../utils/AppError.js");
 const ApiFeatures = require("../utils/apiFeatures.js");
 const filtered = require("../utils/filtered.js");
-const mongoose = require('mongoose');
+const stripOperators = require("../utils/stripOperators.js")
 
 /** 
  * @typedef {import('express').RequestHandler} RequestHandler
@@ -24,14 +21,14 @@ const createComments = catchAsync(
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        const filtered = filtered(req.body, 'text');
+        const filteredBody = filtered(req.body, 'text');
 
         // set author and issue
-        filtered.author = req.user.id;
-        filtered.issue = req.params.id;
+        filteredBody.author = req.user.id;
+        filteredBody.issue = req.params.id;
 
         // find issue
-        const issue = await Issues.findById(filtered.issue)
+        const issue = await Issues.findById(filteredBody.issue)
             .populate({
                 path: 'project',
                 select: 'title status',
@@ -65,7 +62,7 @@ const createComments = catchAsync(
             return next(new AppError(403, 'member can only comments in his or her teams projects issues'));
         }
 
-        const comment = await Comments.create(filtered);
+        const comment = await Comments.create(filteredBody);
 
         res.status(201).json({
             success: true,
@@ -114,10 +111,15 @@ const getIssueComments = catchAsync(
             return next(new AppError(403, 'members can only get comments of his teams projects issues'));
         }
 
-        const features = new ApiFeatures(Comments.find({ issue: req.params.id }), req.query)
+        // filtered req.query allowedFields
+        const filteredQueryParams = filtered(req.query, 'author', 'isEdited', 'page', 'limit', 'sort', 'search');
+
+        const stripedOperatorQueryParams = stripOperators(filteredQueryParams);
+
+        const features = new ApiFeatures(Comments.find({ issue: req.params.id }), stripedOperatorQueryParams)
             .filter()
             .search('text')
-            .sort()
+            .sort('createdAt', '-createdAt', 'updatedAt', '-updatedAt')
             .pagination()
 
         // execute query 

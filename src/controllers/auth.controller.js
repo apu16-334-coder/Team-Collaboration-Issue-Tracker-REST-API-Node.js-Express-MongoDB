@@ -22,10 +22,10 @@ const signUp = catchAsync(
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        const filtered = filtered(req.body, 'name', 'email', 'password')
+        const filteredBody = filtered(req.body, 'name', 'email', 'password')
 
         // Create user in database (password will be hashed via pre-save middleware)
-        await Users.create(filtered);
+        await Users.create(filteredBody);
 
         res.status(201).json({
             success: true,
@@ -151,5 +151,3 @@ const changePassword = catchAsync(
 
 
 module.exports = { signUp, logIn, logOut, changePassword }
-
-
