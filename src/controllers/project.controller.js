@@ -23,12 +23,12 @@ const createProject = catchAsync(
         // If request body is invalid
         if (!req.body) return next(new AppError(400, 'Not valid request body'));
 
-        const filtered = filtered(req.body, 'title', 'description', 'team', 'dueDate');
+        const filteredBody = filtered(req.body, 'title', 'description', 'team', 'dueDate');
 
         // check if team is here
-        if (filtered.team) {
+        if (filteredBody.team) {
             // find team
-            const team = await Teams.findById(filtered.team).select('teamLead isActive');
+            const team = await Teams.findById(filteredBody.team).select('teamLead isActive');
             if (!team || !team.isActive) return next(new AppError(404, 'Team is not found'));
 
             // if team_lead create project for other's team
@@ -38,9 +38,9 @@ const createProject = catchAsync(
         }
 
         // set logged user as createdBy 
-        filtered.createdBy = req.user.id;
+        filteredBody.createdBy = req.user.id;
 
-        const project = await Projects.create(filtered);
+        const project = await Projects.create(filteredBody);
 
         res.status(201).json({
             success: true,
@@ -57,10 +57,15 @@ const createProject = catchAsync(
 const getAllProjects = catchAsync(
     /** @type {RequestHandler} */
     async (req, res, next) => {
-        const features = new ApiFeatures(Projects.find(), req.query)
+        // filtered req.query allowedFields
+        const filteredQueryParams = filtered(req.query, 'status', 'team', 'createdBy', 'dueDate', 'page', 'limit', 'sort', 'search');
+
+        const stripedOperatorQueryParams = stripOperators(filteredQueryParams);
+
+        const features = new ApiFeatures(Projects.find(), stripedOperatorQueryParams)
             .filter()
             .search('title', 'description')
-            .sort()
+            .sort('createdAt', '-createdAt', 'updatedAt', '-updatedAt', 'dueDate', '-dueDate')
             .pagination()
 
         // execute query 
@@ -114,7 +119,7 @@ const getProject = catchAsync(
         if (req.user.role === 'team_lead' && project.team?.teamLead?.id.toString() !== req.user.id) {
             return next(new AppError(403, 'Team lead can get his or her teams projects only'));
         }
- 
+
         // getting Ids of team members of project
         const membersIds = project.team?.members.map(m => m.id) ?? [];
 
@@ -164,14 +169,14 @@ const updateProject = catchAsync(
             : ['title', 'description', 'status']
 
         // Filterd allowed fields which are available 
-        const filtered = filtered(req.body, ...allowedFields)
+        const filteredBody = filtered(req.body, ...allowedFields)
 
-        if (Object.keys(filtered).length === 0) return next(new AppError(400, "No valid fields to update"));
+        if (Object.keys(filteredBody).length === 0) return next(new AppError(400, "No valid fields to update"));
 
         // check if team is here
-        if (filtered.team) {
+        if (filteredBody.team) {
             // find team
-            const team = await Teams.findById(filtered.team).select('isActive');
+            const team = await Teams.findById(filteredBody.team).select('isActive');
             if (!team) return next(new AppError(404, 'Team is not found'));
 
             // If team is not active
@@ -179,15 +184,15 @@ const updateProject = catchAsync(
         }
 
         // if status is here
-        if (filtered.status) {
+        if (filteredBody.status) {
             const allowedStatus = ['planning', 'active', 'on_hold', 'completed']
             // the if status is not allowed
-            if (!allowedStatus.includes(filtered.status)) return next(new AppError(400, `Only status can set as ${allowedStatus.join(', ')}`))
+            if (!allowedStatus.includes(filteredBody.status)) return next(new AppError(400, `Only status can set as ${allowedStatus.join(', ')}`))
         }
 
         const updatedProject = await Projects.findByIdAndUpdate(
             req.params.id,
-            filtered,
+            filteredBody,
             { returnDocument: 'after', runValidators: true }
         ).populate('team', 'title')
 
@@ -253,11 +258,20 @@ const getProjectIssues = catchAsync(
             return next(new AppError(403, 'member can get his or her teams projects issues only'));
         }
 
+        // whitelist of allowedfields
+        const whiteList = req.user.role === 'member'
+            ? ['status', 'priority', 'type', 'dueDate', 'page', 'limit', 'sort', 'search']
+            : ['status', 'priority', 'type', 'assignedTo', 'createdBy', 'dueDate', 'page', 'limit', 'sort', 'search']
+        // filtered req.query allowedFields
+        const filteredQueryParams = filtered(req.query, ...whiteList);
+
+        const stripedOperatorQueryParams = stripOperators(filteredQueryParams);
+
         const queryConditionsObj = req.user.role !== 'member'
             ? { project: project.id }
             : { project: project.id, status: { $nin: ['cancelled'] } }
 
-        const features = new ApiFeatures(Issues.find(queryConditionsObj), req.query)
+        const features = new ApiFeatures(Issues.find(queryConditionsObj), stripedOperatorQueryParams)
             .filter()
             .search('title', 'description')
             .sort()
