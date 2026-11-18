@@ -271,7 +271,7 @@ const getProjectIssues = catchAsync(
             : { project: project.id, status: { $nin: ['cancelled'] } }
 
         const features = new ApiFeatures(Issues.find(queryConditionsObj), stripedOperatorQueryParams)
-            .filter()
+            .filter('cancelled')
             .search('title', 'description')
             .sort('createdAt', '-createdAt', 'updatedAt', '-updatedAt', 'dueDate', '-dueDate')
             .pagination()

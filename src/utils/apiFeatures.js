@@ -11,6 +11,7 @@ class ApiFeatures {
     constructor(query, queryObj) {
         this.query = query;
         this.queryObj = queryObj;
+        this.TempStatus = {};
 
         // Build custom query object for mongoose query
         this.customQueryObj = { ...queryObj };
@@ -27,9 +28,16 @@ class ApiFeatures {
      * - Comparison operators: gte, gt, lte, lt (e.g., ?createdAt[gte]=2024-01-01)
      * @returns {ApiFeatures} - Returns this for method chaining
      */
-    filter() {
+    filter(...statusBlackListValues) {
         // Remove page limit sort search query fields for further query make
         ['page', 'limit', 'sort', 'search'].forEach(el => delete this.customQueryObj[el])
+
+        // If custome query object has status
+        if (this.customQueryObj.status) {
+            const statuses = this.customQueryObj.status.split(',');
+            const filterStatuses = statuses.filter(s => !statusBlackListValues.includes(s));
+            this.customQueryObj.status = filterStatuses.join(' ');
+        }
 
         // Convert comma-separated values to MongoDB $in operator
         // Example: ?role=admin,member → { role: { $in: ['admin', 'member'] } }
@@ -46,11 +54,23 @@ class ApiFeatures {
         queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
         this.customQueryObj = JSON.parse(queryStr);
 
+        // If customer query object has status
+        if (this.queryConditions.status && this.customQueryObj.status) {
+            this.customQueryObj.$and = [
+                { status: this.queryConditions.status },
+                { status: this.customQueryObj.status ?? {} }
+            ]
+
+            delete this.queryConditions.status;
+            delete this.customQueryObj.status;
+        }
+
         // ...build customQueryObj safely...
         this.query = this.query.find({
             ...this.customQueryObj,
             ...this.queryConditions, // base scope applied LAST, always wins
         });
+
         return this;
     }
 
@@ -111,7 +131,7 @@ class ApiFeatures {
     getQueryObjForCount() {
         return {
             ...this.customQueryObj,
-            ...this.queryConditions, // base scope applied LAST, always wins };
+            ...this.queryConditions, // base scope applied LAST, always wins
         }
     }
 }
