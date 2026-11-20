@@ -259,12 +259,18 @@ const getProjectIssues = catchAsync(
 
         // whitelist of allowedfields
         const whiteList = req.user.role === 'member'
-            ? ['status', 'priority', 'type', 'dueDate', 'page', 'limit', 'sort', 'search']
+            ? ['status', 'priority', 'type', 'assignedTo', 'dueDate', 'page', 'limit', 'sort', 'search']
             : ['status', 'priority', 'type', 'assignedTo', 'createdBy', 'dueDate', 'page', 'limit', 'sort', 'search']
         // filtered req.query allowedFields
         const filteredQueryParams = filtered(req.query, ...whiteList);
 
         const stripedOperatorQueryParams = stripOperators(filteredQueryParams);
+
+        if(req.user.role === 'member' && stripedOperatorQueryParams.assignedTo) {
+            if (stripedOperatorQueryParams.assignedTo !== req.user.id) {
+                delete stripedOperatorQueryParams.assignedTo;
+            }
+        }
 
         const queryConditionsObj = req.user.role !== 'member'
             ? { project: project.id }
