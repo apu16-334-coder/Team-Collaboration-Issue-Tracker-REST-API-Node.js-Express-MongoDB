@@ -468,8 +468,10 @@ const getTeamProjects = catchAsync(
             ? { team: team.id }
             : { team: team.id, status: { $nin: ['cancelled', 'archived'] } };
 
+        const filterBlackList = req.user.role !== 'admin' ? ['cancelled', 'archived'] : [];
+
         const features = new ApiFeatures(Projects.find(queryConditionsObj), stripedOperatorQueryParams)
-            .filter('cancelled', 'archived')
+            .filter(...filterBlackList)
             .search('title', 'description')
             .sort('createdAt', '-createdAt', 'updatedAt', '-updatedAt', 'dueDate', '-dueDate')
             .pagination()

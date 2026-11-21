@@ -276,11 +276,14 @@ const getProjectIssues = catchAsync(
             ? { project: project.id }
             : { project: project.id, status: { $nin: ['cancelled'] } }
 
+        const filterBlackList = req.user.role !== 'admin' ? ['cancelled', 'archived'] : [];
+
         const features = new ApiFeatures(Issues.find(queryConditionsObj), stripedOperatorQueryParams)
-            .filter('cancelled')
+            .filter(...filterBlackList)
             .search('title', 'description')
             .sort('createdAt', '-createdAt', 'updatedAt', '-updatedAt', 'dueDate', '-dueDate')
             .pagination()
+
 
         // execute query 
         const issues = await features.query.populate([
